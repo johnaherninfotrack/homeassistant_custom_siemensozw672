@@ -7,6 +7,16 @@ Contributing to this project should be as easy and transparent as possible, whet
 - Submitting a fix
 - Proposing new features
 
+PLEASE - turn on DEBUG logging and submit logs:
+
+Sample configuration.yaml:
+logger:
+  default: info
+  logs:
+    custom_components.siemens_ozw672: debug
+
+
+
 ## Github is used for everything
 
 Github is used to host code, to track issues and feature requests, as well as accept pull requests.
