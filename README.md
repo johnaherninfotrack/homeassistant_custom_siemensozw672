@@ -1,4 +1,4 @@
-# Siemens OZW672 Integration for HomeAssitant
+# Siemens OZW672 Integration for HomeAssistant
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
