@@ -23,6 +23,7 @@ three AVS73.390/109 extension modules.
 Yes - you can use this integration to WRITE values to the OZW672.  Noting that:
 1. The OZW672 only supports certain datapoints to have WriteAccess
 2. This integration only supports writing for "Enumerations", "Numbers" and "Switch" domains.
+3. Some values you write are ignored by the OZW672.  If that happens - test using the OZW672 UI.
 
 
 
