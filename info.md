@@ -43,7 +43,11 @@ NOTE:
     d. Both Prefixes - eg: "DHW - 1640 Legionella function"
 5. You can discover entities to poll, then re-run and discover more.  
 
-
+My recommendations for reliable operation:
+1. Configure the OZW672 to use http. Home > 0.x OZW672.01 > Settings > Communication > Services > We access via http = ON
+2. Configure the OZW672 to use static IP, Gateway & DNS. Home > 0.x OZW672.01 > Settings > Communication > Ethernet
+3. Discover Functions one at a time.  The OZW672 is not powerful - discover one function and max 10 variables at a time.
+4. Configure a dedicated user for your home assistant polling.  I used the "Service" user group.
 
 <!---->
 

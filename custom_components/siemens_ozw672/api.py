@@ -219,6 +219,7 @@ class SiemensOzw672ApiClient:
                 else:   
                         response["Description"]["HAType"] = "sensor"
                 consolidated_response[id]=response
+                time.sleep(0.1) ### SORRY - If we don't sleep when requesting Datapoint Descriptions... We will overload the OZW672
         _LOGGER.debug(f"async_get_data_descr DatapointItem description reponse: {consolidated_response}")
         return consolidated_response
 
