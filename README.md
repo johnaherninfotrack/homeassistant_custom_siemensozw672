@@ -53,12 +53,6 @@ Using your HA configuration directory (folder) as a starting point you should no
 
 ```text
 custom_components/siemens_ozw672/translations/en.json
-custom_components/siemens_ozw672/translations/fr.json
-custom_components/siemens_ozw672/translations/nb.json
-custom_components/siemens_ozw672/translations/sensor.en.json
-custom_components/siemens_ozw672/translations/sensor.fr.json
-custom_components/siemens_ozw672/translations/sensor.nb.json
-custom_components/siemens_ozw672/translations/sensor.nb.json
 custom_components/siemens_ozw672/__init__.py
 custom_components/siemens_ozw672/api.py
 custom_components/siemens_ozw672/binary_sensor.py
@@ -66,6 +60,8 @@ custom_components/siemens_ozw672/config_flow.py
 custom_components/siemens_ozw672/const.py
 custom_components/siemens_ozw672/manifest.json
 custom_components/siemens_ozw672/sensor.py
+custom_components/siemens_ozw672/select.py
+custom_components/siemens_ozw672/number.py
 custom_components/siemens_ozw672/switch.py
 ```
 
