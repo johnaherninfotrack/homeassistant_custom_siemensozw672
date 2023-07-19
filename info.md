@@ -32,9 +32,22 @@
 
 ## Configuration is done in the UI
 
+NOTE: 
+1. The OZW672 is not very powerful - LIMIT polling only variables you require
+2. In my testing http was more scaleable than https - YOU MUST ENABLE THIS IN THE OZW672
+3. https implementation does NOT check for valid server certificate
+4. The component provides flexbility in naming your entities in two ways:
+    a. No Prefix.  eg. "Legionella function"
+    b. Prefix the datapoint with the Function/MenuItem name eg.  "DHW - Legionella function"
+    c. Prefix the datapoint with the Operating Line number from the manual eg. "1640 Legionella function"
+    d. Both Prefixes - eg: "DHW - 1640 Legionella function"
+5. You can discover entities to poll, then re-run and discover more.  
+
 <!---->
 
 ## Credits
+
+This project was created in my spare time on an OZW671.01 monitoring my home Hydronic Plant.  
 
 This project was generated from [@oncleben31](https://github.com/oncleben31)'s [Home Assistant Custom Component Cookiecutter](https://github.com/oncleben31/cookiecutter-homeassistant-custom-component) template.
 

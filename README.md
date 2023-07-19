@@ -90,7 +90,7 @@ If you want to contribute to this please read the [Contribution guidelines](CONT
 
 ## Credits
 
-This project was created by me in my spare time on an OZW671.01 monitoring my home Hydronic Plant.  
+This project was created in my spare time on an OZW671.01 monitoring my home Hydronic Plant.  
 
 This project was generated from [@oncleben31](https://github.com/oncleben31)'s [Home Assistant Custom Component Cookiecutter](https://github.com/oncleben31/cookiecutter-homeassistant-custom-component) template.
 
