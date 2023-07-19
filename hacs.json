@@ -1,0 +1,7 @@
+{
+  "name": "Siemens OZW672",
+  "hacs": "1.6.0",
+  "domains": ["binary_sensor", "sensor", "switch", "number", "select"],
+  "iot_class": "Local Polling",
+  "homeassistant": "0.118.0"
+}

@@ -1,0 +1,60 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Siemens OZW672",
+        "description": "If you need help with the configuration have a look here: https://github.com/jahern2502/siemens-ozw672\nNOTE: If you require HTTP, please ensure it is enabled in the device:\n Home > 0.x OZW672.xx > Settings > Communication > Services",
+        "data": {
+          "hostname": "Hostname/IP",
+          "protocol": "Protocol: http/https",
+          "username": "Username",
+          "password": "Password",
+          "prefix_with_function": "Prefix entities with Function? (eg \"DHW - Legionella function\")",
+          "prefix_with_opline": "Prefix entities with Operating Line Number? (eg \"1640 Legionella function\")"
+        }
+      },
+      "device": {
+        "title": "Siemens OZW672 - Device Selector",
+        "description": "Only devices with 'State: Generated' will be displayed here",
+        "data": {
+          "devicename": "Select the Device to monitor"
+        }
+      },
+      "menuitem": {
+        "title": "Siemens OZW672 - MenuItem Selector",
+        "description": "Please chose the Menu Item(s) you wish to discover",
+        "data": {
+          "menuitems": "Select one or more Menu Items"
+        }
+      },
+      "menuitemenum": {
+        "title": "Function: {item_name} - Data Point Selector",
+        "description": "Select the Data Points to monitor for the Function: {item_name}",
+        "data": {
+          "datapoints": "Select one or more Data Points"
+        }
+      }
+    },
+    "error": {
+      "auth": "Username/Password is wrong.",
+      "device_selection_error": "Unexpected Error",
+      "timeout": "Timeout connecting to the device."
+    },
+    "abort": {
+      "single_instance_allowed": "Only a single instance is allowed."
+    }
+  },
+  "options": {
+    "step": {
+      "user": {
+        "data": {
+          "binary_sensor": "Binary sensor domain enabled",
+          "sensor": "Sensor domain enabled",
+          "switch": "Switch domain enabled",
+          "select": "Select domain enabled",
+          "number": "Number domain enabled"
+        }
+      }
+    }
+  }
+}

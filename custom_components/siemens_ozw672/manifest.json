@@ -1,0 +1,11 @@
+{
+  "domain": "siemens_ozw672",
+  "name": "Siemens OZW672",
+  "version": "0.1.0",
+  "documentation": "https://github.com/jahern2502/siemens-ozw672",
+  "issue_tracker": "https://github.com/jahern2502/siemens-ozw672/issues",
+  "dependencies": [],
+  "config_flow": true,
+  "codeowners": ["@jahern2502"],
+  "requirements": []
+}
