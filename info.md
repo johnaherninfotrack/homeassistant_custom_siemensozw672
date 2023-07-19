@@ -43,6 +43,8 @@ NOTE:
     d. Both Prefixes - eg: "DHW - 1640 Legionella function"
 5. You can discover entities to poll, then re-run and discover more.  
 
+
+
 <!---->
 
 ## Credits
