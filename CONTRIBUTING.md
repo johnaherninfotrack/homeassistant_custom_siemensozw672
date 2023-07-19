@@ -10,10 +10,12 @@ Contributing to this project should be as easy and transparent as possible, whet
 PLEASE - turn on DEBUG logging and submit logs:
 
 Sample configuration.yaml:
+```console
 logger:
   default: info
   logs:
     custom_components.siemens_ozw672: debug
+```
 
 
 
