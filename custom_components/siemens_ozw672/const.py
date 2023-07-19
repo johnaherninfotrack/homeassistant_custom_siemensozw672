@@ -5,8 +5,8 @@ DOMAIN = "siemens_ozw672"
 DOMAIN_DATA = f"{DOMAIN}_data"
 VERSION = "0.1.0"
 
-ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
-ISSUE_URL = "https://github.com/jahern2502/siemens-ozw672/issues"
+ATTRIBUTION = "Integration created by John"
+ISSUE_URL = "https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672/issues"
 
 # Icons
 ICON = "mdi:bookmark"

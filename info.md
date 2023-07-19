@@ -4,7 +4,6 @@
 
 [![hacs][hacsbadge]][hacs]
 [![Project Maintenance][maintenance-shield]][user_profile]
-[![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
 
 [![Discord][discord-shield]][discord]
 [![Community Forum][forum-shield]][forum]
@@ -44,10 +43,8 @@ Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [in
 ---
 
 [integration_blueprint]: https://github.com/custom-components/integration_blueprint
-[buymecoffee]: https://www.buymeacoffee.com/ludeeus
-[buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
-[commits-shield]: https://img.shields.io/github/commit-activity/y/jahern2502/siemens-ozw672.svg?style=for-the-badge
-[commits]: https://github.com/jahern2502/siemens-ozw672/commits/main
+[commits-shield]: https://img.shields.io/github/commit-activity/y/johnaherninfotrack/homeassistant_custom_siemensozw672.svg?style=for-the-badge
+[commits]: https://github.com/:q/commits/main
 [hacs]: https://hacs.xyz
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
 [discord]: https://discord.gg/Qa5fW2R
@@ -55,9 +52,9 @@ Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [in
 [exampleimg]: example.png
 [forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
 [forum]: https://community.home-assistant.io/
-[license]: https://github.com/jahern2502/siemens-ozw672/blob/main/LICENSE
-[license-shield]: https://img.shields.io/github/license/jahern2502/siemens-ozw672.svg?style=for-the-badge
-[maintenance-shield]: https://img.shields.io/badge/maintainer-%40jahern2502-blue.svg?style=for-the-badge
-[releases-shield]: https://img.shields.io/github/release/jahern2502/siemens-ozw672.svg?style=for-the-badge
-[releases]: https://github.com/jahern2502/siemens-ozw672/releases
-[user_profile]: https://github.com/jahern2502
+[license]: https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672/blob/main/LICENSE
+[license-shield]: https://img.shields.io/github/license/johnaherninfotrack/homeassistant_custom_siemensozw672.svg?style=for-the-badge
+[maintenance-shield]: https://img.shields.io/badge/maintainer-%40johnaherninfotrack-blue.svg?style=for-the-badge
+[releases-shield]: https://img.shields.io/github/release/johnaherninfotrack/homeassistant_custom_siemensozw672.svg?style=for-the-badge
+[releases]: https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672/releases
+[user_profile]: https://github.com/johnaherninfotrack

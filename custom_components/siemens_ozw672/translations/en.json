@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Siemens OZW672",
-        "description": "If you need help with the configuration have a look here: https://github.com/jahern2502/siemens-ozw672\nNOTE: If you require HTTP, please ensure it is enabled in the device:\n Home > 0.x OZW672.xx > Settings > Communication > Services",
+        "description": "If you need help with the configuration have a look here: https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672\nNOTE: If you require HTTP, please ensure it is enabled in the device:\n Home > 0.x OZW672.xx > Settings > Communication > Services",
         "data": {
           "hostname": "Hostname/IP",
           "protocol": "Protocol: http/https",

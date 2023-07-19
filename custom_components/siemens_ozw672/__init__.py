@@ -1,7 +1,7 @@
 """
 Custom integration to integrate Siemens OZW672 with Home Assistant.
 For more details about this integration, please refer to
-https://github.com/jahern2502/siemens-ozw672
+https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672
 """
 import asyncio
 import logging
