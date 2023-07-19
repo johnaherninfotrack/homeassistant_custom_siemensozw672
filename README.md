@@ -110,3 +110,5 @@ Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [in
 [releases-shield]: https://img.shields.io/github/release/johnaherninfotrack/homeassistant_custom_siemensozw672.svg?style=for-the-badge
 [releases]: https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672/releases
 [user_profile]: https://github.com/johnaherninfotrack
+[add-integration]: https://my.home-assistant.io/redirect/config_flow_start?domain=siemens_ozw672
+[add-integration-badge]: https://my.home-assistant.io/badges/config_flow_start.svg
