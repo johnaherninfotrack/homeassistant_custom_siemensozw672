@@ -42,6 +42,12 @@ Yes - you can use this integration to WRITE values to the OZW672.  Noting that:
 
 PREFERENCE:  Install via HACS.
 
+1. Add the custom repository in HACS
+2. Install via HACS and restart HomeAssistant
+3. Go to Settings -> Devices and "Add Integration". Select "Siemens OZW672"
+
+Manual Install:
+
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` directory (folder) there, you need to create it.
 3. In the `custom_components` directory (folder) create a new folder called `siemens_ozw672`.
@@ -73,10 +79,10 @@ NOTE:
 2. In my testing http was more scaleable than https - YOU MUST ENABLE THIS IN THE OZW672
 3. https implementation does NOT check for valid server certificate
 4. The component provides flexbility in naming your entities in two ways:
-    a. No Prefix.  eg. "Legionella function"
-    b. Prefix the datapoint with the Function/MenuItem name eg.  "DHW - Legionella function"
-    c. Prefix the datapoint with the Operating Line number from the manual eg. "1640 Legionella function"
-    d. Both Prefixes - eg: "DHW - 1640 Legionella function"
+    <br>a. No Prefix.  eg. "Legionella function"
+    <br>b. Prefix the datapoint with the Function/MenuItem name eg.  "DHW - Legionella function"
+    <br>c. Prefix the datapoint with the Operating Line number from the manual eg. "1640 Legionella function"
+    <br>d. Both Prefixes - eg: "DHW - 1640 Legionella function"
 5. You can discover entities to poll, then re-run and discover more.  
 
 My recommendations for reliable operation:
@@ -90,6 +96,7 @@ My recommendations for reliable operation:
 ## Contributions are welcome!
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
+Please make sure you enable debug and submit logs.
 
 ## Credits
 
