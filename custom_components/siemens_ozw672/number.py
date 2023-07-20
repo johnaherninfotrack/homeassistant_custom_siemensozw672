@@ -102,7 +102,7 @@ class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
         if decimals == '0':
             new_value=round(float(value))
         else:
-            new_value=round(float(value, int(decimals)))
+            new_value=round(float(value), int(decimals))
         _LOGGER.debug(f'SiemensOzw672TempControl - Will update ID: {item} to Value: {str(new_value)} from Value: {str(existing_value)}')
         output = await self.coordinator.api.async_write_data(self.config_entry,str(new_value))
         await self.coordinator._async_update_data_forid(item)
