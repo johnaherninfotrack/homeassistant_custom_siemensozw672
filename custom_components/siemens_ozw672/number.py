@@ -140,6 +140,12 @@ class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
         return val
 
     @property
+    def native_step(self) -> float:
+        """Return step/resolution."""
+        val = float(self.config_entry["DPDescr"]["Resolution"])
+        return val
+
+    @property
     def native_unit_of_measurement(self):
         """Return the native_unit_of_measurement of the sensor."""
         item=self.config_entry["Id"]
@@ -222,6 +228,12 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
         return val
 
     @property
+    def native_step(self) -> float:
+        """Return step/resolution."""
+        val = float(self.config_entry["DPDescr"]["Resolution"])
+        return val
+
+    @property
     def native_unit_of_measurement(self) -> str:
         """Return percentage."""
         return PERCENTAGE
@@ -286,4 +298,10 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
     def native_max_value(self) -> float:
         """Return max Temp."""
         val = float(self.config_entry["DPDescr"]["Max"])
+        return val
+
+    @property
+    def native_step(self) -> float:
+        """Return step/resolution."""
+        val = float(self.config_entry["DPDescr"]["Resolution"])
         return val
