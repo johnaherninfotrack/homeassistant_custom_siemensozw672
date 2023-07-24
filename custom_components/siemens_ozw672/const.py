@@ -44,6 +44,7 @@ CONF_MENUITEMS = "menuitems"
 CONF_DATAPOINTS = "datapoints"
 CONF_PREFIX_FUNCTION = "prefix_with_function"
 CONF_PREFIX_OPLINE = "prefix_with_opline"
+CONF_SCANINTERVAL = "scaninterval"
 
 
 # Defaults

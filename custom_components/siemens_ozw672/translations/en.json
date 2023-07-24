@@ -7,6 +7,7 @@
         "data": {
           "hostname": "Hostname/IP",
           "protocol": "Protocol: http/https",
+          "scaninterval": "Scan Interval",
           "username": "Username",
           "password": "Password",
           "prefix_with_function": "Prefix entities with Function? (eg \"DHW - Legionella function\")",

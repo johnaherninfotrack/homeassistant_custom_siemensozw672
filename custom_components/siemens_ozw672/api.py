@@ -131,6 +131,7 @@ class SiemensOzw672ApiClient:
         elapsed_time = time.time() - start_time
         if elapsed_time > 60:
             _LOGGER.warn(f"OZW672 Data Poll time exceeding 60 seconds. Last Poll Time: {round(elapsed_time)} seconds")
+        _LOGGER.debug(f"OZW672 Data Poll time: {round(elapsed_time)} seconds")
         return consolidated_response
         # Sample response {"Data": {"Type": "Enumeration", "Value": "On", "Unit": ""}, "Result": {"Success": "true"}}
 

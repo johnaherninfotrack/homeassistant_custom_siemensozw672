@@ -23,11 +23,12 @@ from .const import CONF_PROTOCOL
 from .const import CONF_PASSWORD
 from .const import CONF_USERNAME
 from .const import CONF_DATAPOINTS
+from .const import CONF_SCANINTERVAL
 from .const import DOMAIN
 from .const import PLATFORMS
 from .const import STARTUP_MESSAGE
 
-SCAN_INTERVAL = timedelta(seconds=60)
+#SCAN_INTERVAL = timedelta(seconds=60)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -50,10 +51,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     device = entry.data.get(CONF_DEVICE)
     deviceid = entry.data.get(CONF_DEVICE_ID)
     datapoints = entry.data.get(CONF_DATAPOINTS)
+    conf_scaninterval = entry.data.get(CONF_SCANINTERVAL)
+    if conf_scaninterval == None:
+        SCAN_INTERVAL = timedelta(seconds = 60)
+    else:
+        SCAN_INTERVAL = timedelta(seconds = int(conf_scaninterval))
 
     session = async_get_clientsession(hass)
     client = SiemensOzw672ApiClient(host, protocol, username, password, session)
-    coordinator = SiemensOzw672DataUpdateCoordinator(hass, client=client, datapoints=datapoints)
+    coordinator = SiemensOzw672DataUpdateCoordinator(hass, client=client, datapoints=datapoints, scaninterval=SCAN_INTERVAL)
     await coordinator.async_refresh()
 
     if not coordinator.last_update_success:
@@ -77,12 +83,13 @@ class SiemensOzw672DataUpdateCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         client: SiemensOzw672ApiClient,
         datapoints,
+        scaninterval
     ) -> None:
         """Initialize."""
         self.api = client
         self.platforms = []
         self.datapoints = datapoints
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
+        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=scaninterval)
 
     async def _async_update_data(self):
         """Update all data via the OZW672 Web API."""

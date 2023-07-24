@@ -16,6 +16,7 @@ from .const import CONF_MENUITEMS
 from .const import CONF_DATAPOINTS
 from .const import CONF_PREFIX_FUNCTION
 from .const import CONF_PREFIX_OPLINE
+from .const import CONF_SCANINTERVAL
 from .const import DOMAIN
 from .const import PLATFORMS
 
@@ -166,6 +167,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_HOST): str, 
                 vol.Required(CONF_USERNAME): str, 
                 vol.Required(CONF_PASSWORD): str,
+                vol.Required(CONF_SCANINTERVAL, default=60): int,
                 vol.Required(CONF_PREFIX_FUNCTION, default=True): bool,
                 vol.Required(CONF_PREFIX_OPLINE, default=True): bool
             }
