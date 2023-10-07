@@ -10,28 +10,29 @@
           "scaninterval": "Scan Interval",
           "username": "Username",
           "password": "Password",
-          "prefix_with_function": "Prefix entities with Function? (eg \"DHW - Legionella function\")",
+          "prefix_with_function": "Prefix entities with Function? (eg \"RVS43.345/109->DHW - Legionella function\")",
           "prefix_with_opline": "Prefix entities with Operating Line Number? (eg \"1640 Legionella function\")"
         }
       },
       "device": {
-        "title": "Siemens OZW672 - Device Selector",
+        "title": "Siemens OZW672 - Device Selection",
         "description": "Only devices with 'State: Generated' will be displayed here",
         "data": {
           "devicename": "Select the Device to monitor"
         }
       },
-      "menuitem": {
-        "title": "Siemens OZW672 - MenuItem Selector",
+      "mainmenu": {
+        "title": "Siemens OZW672 - Main Menu",
         "description": "Please chose the Menu Item(s) you wish to discover",
         "data": {
           "menuitems": "Select one or more Menu Items"
         }
       },
-      "menuitemenum": {
-        "title": "Function: {item_name} - Data Point Selector",
-        "description": "Select the Data Points to monitor for the Function: {item_name}",
+      "submenu": {
+        "title": "Siemens OZW672 - Menu: {item_name}",
+        "description": "Select the Menu Items and/or Data Points to monitor",
         "data": {
+          "menuitems": "Select one or more Submenu Items",
           "datapoints": "Select one or more Data Points"
         }
       }

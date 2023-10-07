@@ -41,14 +41,13 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
         self._session = None
         self._client = None
-        self._discovereddevices = None
+        self._discovereddevices = dict()
         self._devicemenuitems = None
         self._sysinfo = None
         self._datapoints = []
         self._datapoints_descr = []
         self._deviceid = None
         self._data = None
-        self._lastitemname = ""
         self._devserialnumber = ""
         self.alldevices = None
 
@@ -62,7 +61,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
             if valid:
                 # Get the list of devices:
-                self._discovereddevices = await self._get_menutree("")
+                self._discovereddevices = (await self._get_menutree(""))["MenuItems"]
                 # Get the device menutTrue ID
                 self.alldevices=await self._get_devices()
                 self._data=user_input
@@ -93,57 +92,68 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             if existing_entry:
                 self._datapoints = existing_entry.data.get(CONF_DATAPOINTS)
             await self.async_set_unique_id(self._devserialnumber)
-            ### Now get a list of Functions/MenuItems for this device to enable the user to select what to monitor.
-            self._devicemenuitems = await self._get_menutree(menutreeid)
-            return await self.async_step_menuitem()
+            ### Now get a list of Functions/MenuItems (ignore datapoints at this level) for this device to enable the user to select what to monitor.
+            self._devicemenuitems = (await self._get_menutree(menutreeid))["MenuItems"]
+            return await self.async_step_mainmenu()
         else:
             return await self._show_device_selection_form(user_input)
         return await self._show_device_selection_form(user_input)
 
-    async def async_step_menuitem(self, user_input=None):
+    async def async_step_mainmenu(self, user_input=None):
         self._errors = {}
         if user_input is not None:
             self._data[CONF_MENUITEMS]=user_input[CONF_MENUITEMS]
-            self._devicemenuitems=user_input[CONF_MENUITEMS]
-            _LOGGER.debug(f"CONF_MENUITEMS: {self._data[CONF_MENUITEMS]}")
-            ### Now we have selected a list of Functions/MenuItems to monitor, recursively call a function to enable the user to select entities to monitor.
-            return await self.async_step_menuitemenum()
+            self._alldevicemenuitems=user_input[CONF_MENUITEMS]
+            _LOGGER.debug(f"Found: CONF_MENUITEMS: {self._data[CONF_MENUITEMS]}")
+            ### Now we have selected a list of Functions/MenuItems/DataPointItmes to monitor, recursively call a function to enable the user to select entities to monitor.
+            return await self.async_step_submenu()
         else:
-            return await self._show_menuitem_selection_form(user_input)
-        return await self._show_menuitem_selection_form(user_input)
+            return await self._show_mainmenu_selection_form(user_input)
+        return await self._show_mainmenu_selection_form(user_input)
     
-    async def async_step_menuitemenum(self, user_input=None):
+
+    async def async_step_submenu(self, user_input=None):
+        _LOGGER.debug(f"async_step_submenu - user_input: {user_input}")
         self._errors = {}
         if user_input is not None:
+            ###### WE NEED TO PROCESS SELECTED SUBMENUS HERE
+            if CONF_MENUITEMS in user_input:
+                for submenu in user_input[CONF_MENUITEMS]:
+                    _LOGGER.debug(f'Appending {submenu} in MenuItems to discover')
+                    self._alldevicemenuitems.append(submenu)
             if CONF_DATAPOINTS in user_input:
                 # Get DP Data as we need this to determine type.
                 all_dpdata = await self._get_data(user_input[CONF_DATAPOINTS])
-                _LOGGER.debug(f'async_step_menuitemenum **** Intial DP Data: {all_dpdata}')
+                _LOGGER.debug(f'async_step_submenu **** Intial DP Data: {all_dpdata}')
                 all_dpdescr = await self._get_data_descr(user_input[CONF_DATAPOINTS], all_dpdata)
-                _LOGGER.debug(f'async_step_menuitemenum **** Initial DP Descriptions: {all_dpdescr}')
+                _LOGGER.debug(f'async_step_submenu **** Initial DP Descriptions: {all_dpdescr}')
                 for dp in user_input[CONF_DATAPOINTS]:
                     dpjson=json.loads(dp)
                     dpdescr = all_dpdescr[dpjson["Id"]]["Description"]
-                    _LOGGER.debug(f'async_step_menuitemenum - "Id": {dpjson["Id"]},"WriteAccess": {dpjson["WriteAccess"]},"OpLine": {dpjson["Text"]["Id"]}, "Name": {dpjson["Text"]["Long"]},"MenuItem": {self._lastitemname}, "DPDescr": {dpdescr} ')
-                    self._datapoints.append({"Id": dpjson["Id"],"WriteAccess": dpjson["WriteAccess"],"OpLine": dpjson["Text"]["Id"], "Name": dpjson["Text"]["Long"],"MenuItem": self._lastitemname, "DPDescr": dpdescr })
+                    _LOGGER.debug(f'async_step_submenu - "Id": {dpjson["Id"]},"WriteAccess": {dpjson["WriteAccess"]},"OpLine": {dpjson["Text"]["Id"]}, "Name": {dpjson["Text"]["Long"]},"MenuItem": {dpjson["MenuItem"]}, "DPDescr": {dpdescr} ')
+                    self._datapoints.append({"Id": dpjson["Id"],"WriteAccess": dpjson["WriteAccess"],"OpLine": dpjson["Text"]["Id"], "Name": dpjson["Text"]["Long"],"MenuItem": dpjson["MenuItem"], "DPDescr": dpdescr })
             self._data[CONF_DATAPOINTS]=self._datapoints
             _LOGGER.debug(f"DATAPOINTS: {self._data[CONF_DATAPOINTS]}")
-            if len(self._devicemenuitems) > 0:
-                return await self.async_step_menuitemenum()
+            if len(self._alldevicemenuitems) > 0:
+                ### Recursively traverse through all menu items.
+                _LOGGER.debug("****** Recursing further through menu ******")
+                return await self.async_step_submenu()
             else: ### FINALLY... Create our discovered entities. ###
                 return self.async_create_entry(
                     title=self._data[CONF_DEVICE], data=self._data
                 )
         else:
-            if len(self._devicemenuitems) > 0:
-                item = self._devicemenuitems.pop(0)
-                _LOGGER.debug(f"Generating Config Form for item: {item}")
+            if len(self._alldevicemenuitems) > 0:
+                item = self._alldevicemenuitems.pop(0)
+                _LOGGER.debug(f"Generating Config Form for item: {item} ")
                 ### For each Function/MenuItem selected, list the entities available and allow the user to select what to monitor/poll
-                return await self._show_menuitemenum_selection_form(item,user_input)
+                ### Note - these could be submenus
+                return await self._show_submenu_selection_form(item,user_input)
             else:
-                # We should never be here
+                # We are done
                 return
-        return await self._show_menuitemenum_selection_form(item,user_input)
+        return await self._show_submenu_selection_form(item,user_input)
+
 
     @staticmethod
     @callback
@@ -177,7 +187,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _show_device_selection_form(self, user_input):  # pylint: disable=unused-argument
         """Show the device selection form. """
-        _LOGGER.debug("Building device list")
+        _LOGGER.debug("Building device list from: " + str(self._discovereddevices))
         device_list_selector = []
         for device in self._discovereddevices:
             devchannel=str(device["Text"]["Long"]).split(' ',1)[0]
@@ -198,14 +208,14 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             errors=self._errors,
         )
 
-    async def _show_menuitem_selection_form(self, user_input):  # pylint: disable=unused-argument
+    async def _show_mainmenu_selection_form(self, user_input):  # pylint: disable=unused-argument
         """Show the menu item selection form. """
-        _LOGGER.debug("Building Menu Item list")
+        _LOGGER.debug("Building Menu Item list from " + str(self._devicemenuitems))
         menuitem_list_selector = []
         for menuitem in self._devicemenuitems:
             menuitem_list_selector.append(selector.SelectOptionDict(value=json.dumps(menuitem), label=menuitem["Text"]["Long"]))
         return self.async_show_form(
-            step_id="menuitem",
+            step_id="mainmenu",
             data_schema=vol.Schema(
             {
                 vol.Required(CONF_MENUITEMS): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True))
@@ -214,16 +224,30 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             errors=self._errors,
         )
 
-    async def _show_menuitemenum_selection_form(self, item, user_input):  # pylint: disable=unused-argument
-        """Show the Data Point item selection form. """
-        _LOGGER.debug(f"Building Data Point list for item: {item}")
+    async def _show_submenu_selection_form(self, item, user_input):  # pylint: disable=unused-argument
+        """Show the Sub Menu Itme and Data Point item selection form. """
+        _LOGGER.debug(f"Building SubMenu list for item: {item} ")
         datapoint_list_selector = []
+        menuitem_list_selector = []
+        
         menutree_item=json.loads(item)
         menutree_id=menutree_item["Id"]
         menutree_name=menutree_item["Text"]["Long"]
-        self._lastitemname=menutree_name
+        if "MenuItem" not in item:
+            menutree_menulocation = menutree_name
+        else:
+            menutree_menulocation = menutree_item["MenuItem"] + "->" + menutree_name
+        existing_menu_items = self._devicemenuitems
         existing_dp_items = self._datapoints
-        new_dp_items = await self._get_datapoints(menutree_id)
+        
+        new_all_items = await self._get_menutree(menutree_id)
+        new_dp_items = new_all_items["DatapointItems"]
+        new_menu_items = new_all_items["MenuItems"]
+
+        _LOGGER.debug(f'Generating form for Submenus: {new_menu_items} and DataPoints: {new_dp_items} at menulocation: {menutree_menulocation} ')
+        for menu in new_menu_items:
+            menu["MenuItem"]=menutree_menulocation
+            menuitem_list_selector.append(selector.SelectOptionDict(value=json.dumps(menu), label=menu["Text"]["Long"]) )
 
         for dp in new_dp_items:
             ### If we are already polling a variable - don't list it.
@@ -234,28 +258,45 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     break
             ### If this is something new to monitor - add it to our Dict.
             if not already_exists:
+                dp["MenuItem"]=menutree_menulocation
                 datapoint_list_selector.append(selector.SelectOptionDict(value=json.dumps(dp), label=dp["Text"]["Long"]))
-        if len(datapoint_list_selector) == 0:
-            return self.async_show_form(
-                step_id="menuitemenum",
-                data_schema=vol.Schema(
+        this_data_schema=vol.Schema({vol.Optional(CONF_DATAPOINTS): "",vol.Optional(CONF_DATAPOINTS): ""})
+
+        if len(datapoint_list_selector) == 0 and len(menuitem_list_selector) == 0:
+            this_data_schema=vol.Schema(
+            {
+                vol.Optional(CONF_DATAPOINTS): "",
+                vol.Optional(CONF_DATAPOINTS): "" 
+            }
+            )
+        elif len(datapoint_list_selector) == 0 and len(menuitem_list_selector) > 0:
+            this_data_schema=vol.Schema(
+            {
+                vol.Optional(CONF_MENUITEMS): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
+                vol.Optional(CONF_DATAPOINTS): "" 
+            }
+            )
+        elif len(datapoint_list_selector) > 0 and len(menuitem_list_selector) == 0:
+            this_data_schema=vol.Schema(
                 {
-                    vol.Optional(CONF_DATAPOINTS): "" 
+                vol.Optional(CONF_MENUITEMS): "",
+                vol.Required(CONF_DATAPOINTS): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
                 }
-                ),
-                description_placeholders={"item_name": menutree_name},
-                errors=self._errors,
+            )
+        elif len(datapoint_list_selector) > 0 and len(menuitem_list_selector) > 0:
+            this_data_schema=vol.Schema(
+                {
+                vol.Optional(CONF_MENUITEMS): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
+                vol.Required(CONF_DATAPOINTS): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
+                }
             )
         return self.async_show_form(
-            step_id="menuitemenum",
-            data_schema=vol.Schema(
-            {
-                vol.Required(CONF_DATAPOINTS): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
-            }
-            ),
-            description_placeholders={"item_name": menutree_name},
+            step_id="submenu",
+            data_schema=this_data_schema,
+            description_placeholders={"item_name": menutree_menulocation},
             errors=self._errors,
         )
+
 
     async def _test_credentials(self, host, protocol, username, password):
         """Return true if credentials are valid."""
@@ -279,21 +320,24 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def _get_devices(self):
         try:
             devices = await self._client.async_get_devices()
-        except Exception:  # pylint: disable=broad-except
+        except Exception as err: # pylint: disable=broad-except
+            _LOGGER.debug(f'Exception: {repr(err)}')
             pass
         return devices
 
     async def _get_menutree(self,id):
         try:
             output = await self._client.async_get_menutree(id)
-        except Exception:  # pylint: disable=broad-except
+        except Exception as err: # pylint: disable=broad-except
+            _LOGGER.debug(f'Exception: {repr(err)}')
             pass
         return output
 
     async def _get_datapoints(self,id):
         try:
             output = await self._client.async_get_datapoints(id)
-        except Exception:  # pylint: disable=broad-except
+        except Exception as err: # pylint: disable=broad-except
+            _LOGGER.debug(f'Exception: {repr(err)}')
             pass
         return output
 

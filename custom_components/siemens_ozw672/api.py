@@ -82,6 +82,8 @@ class SiemensOzw672ApiClient:
         url=self._protocol + "://" + self._host + "/api/menutree/list.json?SessionId=" + self._sessionid +"&Id=" + id
         if (self._host == "test") and (id==""):
             response=json.loads(TESTDATA["MENUTREEDEVICELIST"])
+        elif (self._host == "test") and (int(id) > 0):
+            response=json.loads(TESTDATA["MENUITEMLIST"][id])
         elif (self._host == "test"):
             response=json.loads(TESTDATA["MENUITEMLIST"])
         else:
@@ -89,7 +91,7 @@ class SiemensOzw672ApiClient:
         _LOGGER.debug(f"async_get_menutree reponse: {response}")
         success = response["Result"]["Success"]
         if (success == "true"):
-            return(response["MenuItems"])
+            return(response)
         return None
 
     async def async_get_datapoints(self,id) -> dict:
@@ -220,7 +222,7 @@ class SiemensOzw672ApiClient:
                 else:   
                         response["Description"]["HAType"] = "sensor"
                 consolidated_response[id]=response
-                time.sleep(0.1) ### SORRY - If we don't sleep when requesting Datapoint Descriptions... We will overload the OZW672
+                #time.sleep(0.1) ### SORRY - If we don't sleep when requesting Datapoint Descriptions... We will overload the OZW672
         _LOGGER.debug(f"async_get_data_descr DatapointItem description reponse: {consolidated_response}")
         return consolidated_response
 
