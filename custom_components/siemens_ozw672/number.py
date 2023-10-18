@@ -97,13 +97,15 @@ class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
         """Update Temp ."""
         _LOGGER.debug(f'SiemensOzw672TempControl: Set_native_Value: {value}')
         item=self.config_entry["Id"]
+        opline=self.config_entry["OpLine"]
+        name=self.config_entry["Name"]
         existing_value=self.config_entry["DPDescr"]["Value"]
         decimals=self.config_entry["DPDescr"]["DecimalDigits"]
         if decimals == '0':
             new_value=round(float(value))
         else:
             new_value=round(float(value), int(decimals))
-        _LOGGER.debug(f'SiemensOzw672TempControl - Will update ID: {item} to Value: {str(new_value)} from Value: {str(existing_value)}')
+        _LOGGER.info(f'SiemensOzw672TempControl - Will update ID/Opline/Name: {item}/{opline}/{name} to Value: {str(new_value)} from Value: {str(existing_value)}')
         output = await self.coordinator.api.async_write_data(self.config_entry,str(new_value))
         await self.coordinator._async_update_data_forid(item)
         await self.coordinator.async_request_refresh()
@@ -180,13 +182,15 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
         """Update The Percentage ."""
         _LOGGER.debug(f'SiemensOzw672PercentControl: Set_native_Value: {value}')
         item=self.config_entry["Id"]
+        opline=self.config_entry["OpLine"]
+        name=self.config_entry["Name"]
         existing_value=self.config_entry["DPDescr"]["Value"]
         decimals=self.config_entry["DPDescr"]["DecimalDigits"]
         if decimals == '0':
             new_value=round(float(value))
         else:
             new_value=round(float(value, int(decimals)))
-        _LOGGER.debug(f'SiemensOzw672PercentControl - Will update ID: {item} to Value: {str(new_value)} from Value: {str(existing_value)}')
+        _LOGGER.info(f'SiemensOzw672PercentControl - Will update ID/Opline/Name: {item}/{opline}/{name} to Value: {str(new_value)} from Value: {str(existing_value)}')
         output = await self.coordinator.api.async_write_data(self.config_entry,str(new_value))
         await self.coordinator._async_update_data_forid(item)
         await self.coordinator.async_request_refresh()
@@ -258,13 +262,15 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
         """Update The Percentage ."""
         _LOGGER.debug(f'SiemensOzw672NumberControl: Set_native_Value: {value}')
         item=self.config_entry["Id"]
+        opline=self.config_entry["OpLine"]
+        name=self.config_entry["Name"]
         existing_value=self.config_entry["DPDescr"]["Value"]
         decimals=self.config_entry["DPDescr"]["DecimalDigits"]
         if decimals == '0':
             new_value=round(float(value))
         else:
             new_value=round(float(value, int(decimals)))
-        _LOGGER.debug(f'SiemensOzw672NumberControl - Will update ID: {item} to Value: {str(new_value)} from Value: {str(existing_value)}')
+        _LOGGER.info(f'SiemensOzw672NumberControl - Will update ID/Opline/Name: {item}/{opline}/{name} to Value: {str(new_value)} from Value: {str(existing_value)}')
         output = await self.coordinator.api.async_write_data(self.config_entry,str(new_value))
         await self.coordinator._async_update_data_forid(item)
         await self.coordinator.async_request_refresh()

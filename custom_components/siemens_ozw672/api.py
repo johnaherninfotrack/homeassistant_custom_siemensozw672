@@ -13,16 +13,12 @@ import async_timeout
 
 from .const import TESTDATA
 
-# HTTP TIMEOUT AND RETRY
-TIMEOUT = 30
-RETRIES = 2
-
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 HEADERS = {"Content-type": "application/json; charset=UTF-8"}
 
 class SiemensOzw672ApiClient:
     def __init__(
-        self, host: str, protocol: str, username: str, password: str, session: aiohttp.ClientSession
+        self, host: str, protocol: str, username: str, password: str, session: aiohttp.ClientSession, timeout: int, retries: int
     ) -> None:
         """Siemens OZW672 API Client."""
         _LOGGER.debug("OZW Init")
@@ -33,6 +29,8 @@ class SiemensOzw672ApiClient:
         self._session = session
         self._sessionid = "None"
         self._dpdata = None 
+        self._timeout = timeout
+        self._retries = retries
 
     async def async_get_sessionid(self) -> bool:
         """Login to the OZW672 and get a SessionID"""
@@ -222,7 +220,6 @@ class SiemensOzw672ApiClient:
                 else:   
                         response["Description"]["HAType"] = "sensor"
                 consolidated_response[id]=response
-                #time.sleep(0.1) ### SORRY - If we don't sleep when requesting Datapoint Descriptions... We will overload the OZW672
         _LOGGER.debug(f"async_get_data_descr DatapointItem description reponse: {consolidated_response}")
         return consolidated_response
 
@@ -231,9 +228,9 @@ class SiemensOzw672ApiClient:
     ) -> dict:
         """Get information from the OZW WebAPI."""
 
-        for x in range(RETRIES):  #### YES - WE NEED TO RETRY OCCASSIONALY
+        for x in range(self._retries):  #### YES - WE NEED TO RETRY OCCASSIONALY
             try:
-                async with async_timeout.timeout(TIMEOUT): #, loop=asyncio.get_event_loop()):
+                async with async_timeout.timeout(self._timeout): #, loop=asyncio.get_event_loop()):
                     if method == "get_preauth":
                         response = await self._session.get(url, headers=headers,verify_ssl=False)
                         jsonresponse = await response.json()
@@ -258,7 +255,7 @@ class SiemensOzw672ApiClient:
                     url,
                     exception,
                 )
-                if x < retries:
+                if x < self._retries:
                     _LOGGER.error("**** Module will retry ****")
                     pass
 

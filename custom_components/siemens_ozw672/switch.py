@@ -91,7 +91,9 @@ class SiemensOzw672BinarySwitch(SiemensOzw672Entity, SwitchEntity):
     async def async_turn_on(self, **kwargs):  # pylint: disable=unused-argument
         """Turn on the switch."""
         item=self.config_entry["Id"]
-        _LOGGER.debug(f'SiemensOzw672BinarySwitch - Will update ID: {item} to Value: 1')
+        opline=self.config_entry["OpLine"]
+        name=self.config_entry["Name"]
+        _LOGGER.info(f'SiemensOzw672BinarySwitch - Will update ID/Opline/Name: {item}/{opline}/{name} to Value: 1')
         output = await self.coordinator.api.async_write_data(self.config_entry,'1')
         await self.coordinator._async_update_data_forid(item)
         await self.coordinator.async_request_refresh()
@@ -100,7 +102,9 @@ class SiemensOzw672BinarySwitch(SiemensOzw672Entity, SwitchEntity):
     async def async_turn_off(self, **kwargs):  # pylint: disable=unused-argument
         """Turn off the switch."""
         item=self.config_entry["Id"]
-        _LOGGER.debug(f'SiemensOzw672BinarySwitch - Will update ID: {item} to Value: 0')
+        opline=self.config_entry["OpLine"]
+        name=self.config_entry["Name"]
+        _LOGGER.info(f'SiemensOzw672BinarySwitch - Will update ID/Opline/Name: {item}/{opline}/{name} to Value: 0')
         output = await self.coordinator.api.async_write_data(self.config_entry,'0')
         await self.coordinator._async_update_data_forid(item)
         await self.coordinator.async_request_refresh()

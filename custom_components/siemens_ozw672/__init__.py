@@ -24,9 +24,14 @@ from .const import CONF_PASSWORD
 from .const import CONF_USERNAME
 from .const import CONF_DATAPOINTS
 from .const import CONF_SCANINTERVAL
+from .const import CONF_HTTPTIMEOUT
+from .const import CONF_HTTPRETRIES
 from .const import DOMAIN
 from .const import PLATFORMS
 from .const import STARTUP_MESSAGE
+from .const import DEFAULT_HTTPTIMEOUT
+from .const import DEFAULT_HTTPRETRIES
+from .const import DEFAULT_SCANINTERVAL
 
 #SCAN_INTERVAL = timedelta(seconds=60)
 
@@ -51,16 +56,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     device = entry.data.get(CONF_DEVICE)
     deviceid = entry.data.get(CONF_DEVICE_ID)
     datapoints = entry.data.get(CONF_DATAPOINTS)
-    conf_scaninterval = entry.data.get(CONF_SCANINTERVAL)
-    if conf_scaninterval == None:
-        SCAN_INTERVAL = timedelta(seconds = 60)
-    else:
-        SCAN_INTERVAL = timedelta(seconds = int(conf_scaninterval))
+    conf_scaninterval = entry.options.get(CONF_SCANINTERVAL)
+    conf_httptimeout = entry.options.get(CONF_HTTPTIMEOUT)
+    conf_httpretries = entry.options.get(CONF_HTTPRETRIES)
+    if conf_scaninterval == None: conf_scaninterval = DEFAULT_SCANINTERVAL
+    if conf_httptimeout == None: conf_httptimeout = DEFAULT_HTTPTIMEOUT
+    if conf_httpretries == None: conf_httpretries = DEFAULT_HTTPRETRIES
 
     session = async_get_clientsession(hass)
-    client = SiemensOzw672ApiClient(host, protocol, username, password, session)
-    coordinator = SiemensOzw672DataUpdateCoordinator(hass, client=client, datapoints=datapoints, scaninterval=SCAN_INTERVAL)
+    client = SiemensOzw672ApiClient(host, protocol, username, password, session, timeout=conf_httptimeout, retries=conf_httpretries)
+    coordinator = SiemensOzw672DataUpdateCoordinator(hass, client=client, datapoints=datapoints, scaninterval=(timedelta(seconds = conf_scaninterval)))
     await coordinator.async_refresh()
+    
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
@@ -72,7 +79,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             hass.async_add_job(
                 hass.config_entries.async_forward_entry_setup(entry, platform)
             )
-    entry.add_update_listener(async_reload_entry)
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
     return True
 
 
@@ -130,5 +138,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
+    await hass.config_entries.async_reload(entry.entry_id)

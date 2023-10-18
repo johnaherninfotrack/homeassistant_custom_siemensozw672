@@ -54,7 +54,10 @@
           "sensor": "Sensor domain enabled",
           "switch": "Switch domain enabled",
           "select": "Select domain enabled",
-          "number": "Number domain enabled"
+          "number": "Number domain enabled",
+          "httptimeout": "HTTP Timeout (sec)",
+          "httpretries": "HTTP Retries",
+          "scaninterval": "Polling Interval (sec)"
         }
       }
     }

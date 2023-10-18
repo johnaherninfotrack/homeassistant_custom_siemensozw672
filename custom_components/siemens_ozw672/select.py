@@ -79,10 +79,12 @@ class SiemensOzw672SelectControl(SiemensOzw672Entity, SelectEntity):
         """Change the selected option."""
         _LOGGER.debug(f'SiemensOzw672SelectControl - select_option String: {option}')
         item=self.config_entry["Id"]
+        opline=self.config_entry["OpLine"]
+        name=self.config_entry["Name"]
         enums=self.config_entry["DPDescr"]["Enums"]
         for enum in enums:
             if enum["Text"].encode('unicode_escape').decode() == option.encode('unicode_escape').decode():
-                _LOGGER.debug(f'SiemensOzw672SelectControl - Will update ID: {item} to Value: {enum["Value"]}')
+                _LOGGER.info(f'SiemensOzw672SelectControl - Will update ID/Opline/Name: {item}/{opline}/{name} to Value: {enum["Value"]}')
                 output = await self.coordinator.api.async_write_data(self.config_entry,enum["Value"])
                 await self.coordinator._async_update_data_forid(item)
                 await self.coordinator.async_request_refresh()

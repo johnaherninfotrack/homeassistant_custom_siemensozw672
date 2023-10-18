@@ -29,7 +29,6 @@ SWITCH = "switch"
 SELECT = "select"
 NUMBER = "number"
 PLATFORMS = [SWITCH, SELECT, NUMBER, BINARY_SENSOR, SENSOR]
-#PLATFORMS = [NUMBER, SENSOR]
 
 
 # Configuration and options
@@ -45,6 +44,12 @@ CONF_DATAPOINTS = "datapoints"
 CONF_PREFIX_FUNCTION = "prefix_with_function"
 CONF_PREFIX_OPLINE = "prefix_with_opline"
 CONF_SCANINTERVAL = "scaninterval"
+CONF_HTTPTIMEOUT = "httptimeout"
+CONF_HTTPRETRIES = "httpretries"
+
+DEFAULT_HTTPTIMEOUT = 30
+DEFAULT_HTTPRETRIES = 2
+DEFAULT_SCANINTERVAL = 60
 
 
 # Defaults

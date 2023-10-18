@@ -4,6 +4,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers import selector
+from datetime import timedelta
 
 from .api import SiemensOzw672ApiClient
 from .const import CONF_HOST
@@ -17,8 +18,13 @@ from .const import CONF_DATAPOINTS
 from .const import CONF_PREFIX_FUNCTION
 from .const import CONF_PREFIX_OPLINE
 from .const import CONF_SCANINTERVAL
+from .const import CONF_HTTPTIMEOUT
+from .const import CONF_HTTPRETRIES
 from .const import DOMAIN
 from .const import PLATFORMS
+from .const import DEFAULT_HTTPTIMEOUT
+from .const import DEFAULT_HTTPRETRIES
+from .const import DEFAULT_SCANINTERVAL
 
 import json
 
@@ -57,7 +63,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
         if user_input is not None:
             valid = await self._test_credentials(
-                user_input[CONF_HOST], user_input[CONF_PROTOCOL], user_input[CONF_USERNAME], user_input[CONF_PASSWORD]
+                user_input[CONF_HOST], user_input[CONF_PROTOCOL], user_input[CONF_USERNAME], user_input[CONF_PASSWORD], DEFAULT_HTTPTIMEOUT, DEFAULT_HTTPRETRIES
             )
             if valid:
                 # Get the list of devices:
@@ -177,7 +183,6 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_HOST): str, 
                 vol.Required(CONF_USERNAME): str, 
                 vol.Required(CONF_PASSWORD): str,
-                vol.Required(CONF_SCANINTERVAL, default=60): int,
                 vol.Required(CONF_PREFIX_FUNCTION, default=True): bool,
                 vol.Required(CONF_PREFIX_OPLINE, default=True): bool
             }
@@ -298,11 +303,11 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-    async def _test_credentials(self, host, protocol, username, password):
+    async def _test_credentials(self, host, protocol, username, password, timeout, retries):
         """Return true if credentials are valid."""
         try:
             self._session = async_create_clientsession(self.hass)
-            self._client = SiemensOzw672ApiClient(host, protocol, username, password, self._session)
+            self._client = SiemensOzw672ApiClient(host, protocol, username, password, self._session, timeout, retries)
             if (await self._client.async_get_sessionid()):
                 return True
             return False
@@ -341,7 +346,6 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             pass
         return output
 
-
     async def _get_data(self, datapoints):
         """Update data via OZW API."""
         try:
@@ -350,7 +354,6 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.debug(f'Exception: {repr(err)}')
             pass
             return ''
-
 
     async def _get_data_descr(self,datapoints,all_dpdata):
         try:
@@ -361,12 +364,19 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return ''
 
 class SiemensOzw672OptionsFlowHandler(config_entries.OptionsFlow):
-    """NOT REALLY USEFUL YET: Config flow options handler for siemens_ozw672."""
+    """Config flow options handler for siemens_ozw672."""
 
     def __init__(self, config_entry):
         """Initialize HACS options flow."""
         self.config_entry = config_entry
         self.options = dict(config_entry.options)
+        _LOGGER.debug(f'OptionsFlow - Existing options: {self.options}')
+        self.conf_httptimeout = self.options.get(CONF_HTTPTIMEOUT)
+        self.conf_httpretries = self.options.get(CONF_HTTPRETRIES)
+        self.conf_scaninterval = self.options.get(CONF_SCANINTERVAL) 
+        if self.conf_httptimeout == None: self.conf_httptimeout=DEFAULT_HTTPTIMEOUT
+        if self.conf_httpretries == None: self.conf_httpretries=DEFAULT_HTTPRETRIES
+        if self.conf_scaninterval == None: self.conf_scaninterval=DEFAULT_SCANINTERVAL
 
     async def async_step_init(self, user_input=None):  # pylint: disable=unused-argument
         """Manage the options."""
@@ -376,24 +386,33 @@ class SiemensOzw672OptionsFlowHandler(config_entries.OptionsFlow):
         """Handle a flow initialized by the user."""
         if user_input is not None:
             self.options.update(user_input)
+            _LOGGER.debug(f'Updating Options.  New Options: {self.options}')
             return await self._update_options()
+            
 
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(x, default=self.options.get(x, True)): bool
-                    for x in sorted(PLATFORMS)
+                    vol.Required(CONF_HTTPTIMEOUT, default=self.conf_httptimeout): int,
+                    vol.Required(CONF_HTTPRETRIES, default=self.conf_httpretries): int,
+                    vol.Required(CONF_SCANINTERVAL, default=self.conf_scaninterval): int,
+                    vol.Required("switch", default=self.options.get("switch", True)): bool,
+                    vol.Required("select", default=self.options.get("select", True)): bool,
+                    vol.Required("number", default=self.options.get("number", True)): bool,
+                    vol.Required("binary_sensor", default=self.options.get("binary_sensor", True)): bool,
+                    vol.Required("sensor", default=self.options.get("sensor", True)): bool
                 }
-            ),
+            )
         )
 
     async def _update_options(self):
         """Update config entry options."""
-        return self.async_create_entry(
-            title=self.config_entry.data.get(CONF_HOST), data=self.options
+        _LOGGER.debug(
+            "Recreating entry %s due to configuration change",
+            self.config_entry.title
         )
-
+        return self.async_create_entry(title="", data=self.options)
 
 
 
