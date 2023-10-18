@@ -92,14 +92,13 @@ class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return float(data)
 
-
     async def async_set_native_value(self, value: float) -> None:
         """Update Temp ."""
         _LOGGER.debug(f'SiemensOzw672TempControl: Set_native_Value: {value}')
         item=self.config_entry["Id"]
         opline=self.config_entry["OpLine"]
         name=self.config_entry["Name"]
-        existing_value=self.config_entry["DPDescr"]["Value"]
+        existing_value=self.coordinator.data[item]["Data"]["Value"].strip()
         decimals=self.config_entry["DPDescr"]["DecimalDigits"]
         if decimals == '0':
             new_value=round(float(value))
@@ -184,7 +183,7 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
         item=self.config_entry["Id"]
         opline=self.config_entry["OpLine"]
         name=self.config_entry["Name"]
-        existing_value=self.config_entry["DPDescr"]["Value"]
+        existing_value=self.coordinator.data[item]["Data"]["Value"].strip()
         decimals=self.config_entry["DPDescr"]["DecimalDigits"]
         if decimals == '0':
             new_value=round(float(value))
@@ -264,7 +263,7 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
         item=self.config_entry["Id"]
         opline=self.config_entry["OpLine"]
         name=self.config_entry["Name"]
-        existing_value=self.config_entry["DPDescr"]["Value"]
+        existing_value=self.coordinator.data[item]["Data"]["Value"].strip()
         decimals=self.config_entry["DPDescr"]["DecimalDigits"]
         if decimals == '0':
             new_value=round(float(value))
