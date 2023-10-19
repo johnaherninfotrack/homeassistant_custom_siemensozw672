@@ -240,12 +240,16 @@ class SiemensOzw672ApiClient:
                         cache_sessionid = self._sessionid
                         response = await self._session.get(url, headers=headers,verify_ssl=False)
                         jsonresponse = await response.json()
-                        _LOGGER.debug(f"GET: {jsonresponse}")
+                        _LOGGER.debug(f"API GET: {jsonresponse}")
                         if (jsonresponse["Result"]["Success"] == "false"):
-                            await self.async_get_sessionid()
-                            # Search and replace SessionId
-                            newurl = url.replace(f"SessionId={cache_sessionid}", f"SessionId={self._sessionid}")
-                            return await self.api_wrapper("get", newurl)
+                            if (jsonresponse["Result"]["Error"]["Nr"] in ['1','2']):
+                                await self.async_get_sessionid()
+                                # Search and replace SessionId
+                                newurl = url.replace(f"SessionId={cache_sessionid}", f"SessionId={self._sessionid}")
+                                return await self.api_wrapper("get", newurl)
+                            else :
+                                _LOGGER.error(f'Failed API call with error: {jsonresponse["Result"]["Error"]["Txt"]}')
+                                return jsonresponse
                         else:
                             return jsonresponse
 
