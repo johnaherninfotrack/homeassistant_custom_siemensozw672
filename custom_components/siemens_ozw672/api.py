@@ -144,7 +144,10 @@ class SiemensOzw672ApiClient:
             dpdata = datapoint
         id = dpdata["Id"]
         dptype = dpdata["DPDescr"]["Type"]
+        hasValid = dpdata["DPDescr"]["HasValid"]
         url=self._protocol + "://" + self._host + "/api/menutree/write_datapoint.json?SessionId=" + self._sessionid +"&Id=" + id + "&Type=" + dptype + "&Value=" + value
+        if (hasValid == 'true'):
+            url=url + '&IsValid=true'
         if (self._host == "test"):
             # I could do something here to make the test work using the DPDescr cached data
             response=json.loads(TESTDATA["DATAPOINT"][id])
@@ -248,7 +251,8 @@ class SiemensOzw672ApiClient:
                                 newurl = url.replace(f"SessionId={cache_sessionid}", f"SessionId={self._sessionid}")
                                 return await self.api_wrapper("get", newurl)
                             else :
-                                _LOGGER.error(f'Failed API call with error: {jsonresponse["Result"]["Error"]["Txt"]}')
+                                url.replace(f"SessionId={cache_sessionid}", "SessionId=XXXXXX")
+                                _LOGGER.error(f'Failed API call with error: {jsonresponse["Result"]["Error"]["Txt"]} for url:{url}')
                                 return jsonresponse
                         else:
                             return jsonresponse
