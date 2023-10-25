@@ -144,7 +144,10 @@ class SiemensOzw672ApiClient:
             dpdata = datapoint
         id = dpdata["Id"]
         dptype = dpdata["DPDescr"]["Type"]
-        hasValid = dpdata["DPDescr"]["HasValid"]
+        if (dptype == "Numeric") and ("HasValid" in dpdata["DPDescr"]):
+            hasValid = dpdata["DPDescr"]["HasValid"]
+        else:
+            hasValid='false'
         url=self._protocol + "://" + self._host + "/api/menutree/write_datapoint.json?SessionId=" + self._sessionid +"&Id=" + id + "&Type=" + dptype + "&Value=" + value
         if (hasValid == 'true'):
             url=url + '&IsValid=true'
@@ -241,6 +244,8 @@ class SiemensOzw672ApiClient:
                         return jsonresponse
                     elif method == "get":
                         cache_sessionid = self._sessionid
+                        logurl=url.replace(f"SessionId={cache_sessionid}", "SessionId=XXXXXX")
+                        _LOGGER.debug(f"HTTP GET url: {logurl}")
                         response = await self._session.get(url, headers=headers,verify_ssl=False)
                         jsonresponse = await response.json()
                         _LOGGER.debug(f"API GET: {jsonresponse}")
@@ -251,8 +256,7 @@ class SiemensOzw672ApiClient:
                                 newurl = url.replace(f"SessionId={cache_sessionid}", f"SessionId={self._sessionid}")
                                 return await self.api_wrapper("get", newurl)
                             else :
-                                url.replace(f"SessionId={cache_sessionid}", "SessionId=XXXXXX")
-                                _LOGGER.error(f'Failed API call with error: {jsonresponse["Result"]["Error"]["Txt"]} for url:{url}')
+                                _LOGGER.error(f'Failed API call with error: {jsonresponse["Result"]["Error"]["Txt"]} for url:{logurl}')
                                 return jsonresponse
                         else:
                             return jsonresponse
