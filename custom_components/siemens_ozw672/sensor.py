@@ -34,6 +34,13 @@ import logging
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
+def is_float(string):
+    if "." in string:
+        if string.replace(".", "").isnumeric():
+            return True
+    else:
+        return False
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Setup sensor platform."""
     _LOGGER.debug(f"SENSOR - Setup_Entry.  DATA: {hass.data[DOMAIN]}")
@@ -153,7 +160,10 @@ class SiemensOzw672TempSensor(SiemensOzw672Entity,SensorEntity):
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
-            return int(data)
+            if is_float(data):
+                return float(data)
+            else:
+                return int(data)
         return data
 
     @property
@@ -163,7 +173,10 @@ class SiemensOzw672TempSensor(SiemensOzw672Entity,SensorEntity):
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
-            return int(data)
+            if is_float(data):
+                return float(data)
+            else:
+                return int(data)
         return data
 
     @property
@@ -243,7 +256,10 @@ class SiemensOzw672EnergySensor(SiemensOzw672Entity,SensorEntity):
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
-            return int(data)
+            if is_float(data):
+                return float(data)
+            else:
+                return int(data)
         return data
 
     @property
@@ -253,7 +269,10 @@ class SiemensOzw672EnergySensor(SiemensOzw672Entity,SensorEntity):
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
-            return int(data)
+            if is_float(data):
+                return float(data)
+            else:
+                return int(data)
         return data
 
     @property
@@ -293,7 +312,7 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
-            if isinstance(data,float):
+            if is_float(data):
                 return float(data)
             else:
                 return int(data)
@@ -306,7 +325,7 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
-            if isinstance(data,float):
+            if is_float(data):
                 return float(data)
             else:
                 return int(data)

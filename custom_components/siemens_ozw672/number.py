@@ -76,6 +76,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 elif datapoints[item]["Data"]["Unit"] in ['%']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672PercentControl(coordinator,dp_config)])
+                elif datapoints[item]["Data"]["Unit"] in ['kWh', 'Wh']:
+                    entities.append(dp_config)
+                    async_add_entities([SiemensOzw672EnergyControl(coordinator,dp_config)])
                 elif datapoints[item]["Data"]["Type"] == "Numeric":
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672NumberControl(coordinator,dp_config)])
@@ -247,6 +250,91 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
     def native_unit_of_measurement(self) -> str:
         """Return percentage."""
         return PERCENTAGE
+
+
+
+class SiemensOzw672EnergyControl(SiemensOzw672Entity,NumberEntity):
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        _LOGGER.debug(f"SiemensOzw672EnergyControl: Config: {self.config_entry}")
+        return f'{self.config_entry["entity_prefix"]}{self.config_entry["Name"]}'
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        _LOGGER.debug(f'SiemensOzw672EnergyControl: Data: {self.coordinator.data}')
+        item=self.config_entry["Id"]
+        data=self.coordinator.data[item]["Data"]["Value"].strip()
+        return float(data)
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Update Temp ."""
+        _LOGGER.debug(f'SiemensOzw672EnergyControl: Set_native_Value: {value}')
+        item=self.config_entry["Id"]
+        opline=self.config_entry["OpLine"]
+        name=self.config_entry["Name"]
+        existing_value=self.coordinator.data[item]["Data"]["Value"].strip()
+        decimals=self.config_entry["DPDescr"]["DecimalDigits"]
+        if decimals == '0':
+            new_value=round(float(value))
+        else:
+            new_value=round(float(value), int(decimals))
+        _LOGGER.info(f'SiemensOzw672EnergyControl - Will update ID/Opline/Name: {item}/{opline}/{name} to Value: {str(new_value)} from Value: {str(existing_value)}')
+        output = await self.coordinator.api.async_write_data(self.config_entry,str(new_value))
+        await self.coordinator._async_update_data_forid(item)
+        await self.coordinator.async_request_refresh()
+        return 
+
+    @property
+    def native_value(self):
+        """Return the state of the sensor."""
+        _LOGGER.debug(f'SiemensOzw672EnergyControl: Native Data: {self.coordinator.data}')
+        item=self.config_entry["Id"]
+        data=self.coordinator.data[item]["Data"]["Value"].strip()
+        return float(data)
+
+    @property
+    def icon(self):
+        """Return the icon of the sensor."""
+        return ICON_POWER
+
+    @property
+    def device_class(self):
+        """Return de device class of the sensor."""
+        return SensorDeviceClass.ENERGY
+
+    @property
+    def state_class(self):
+        """Return de device class of the sensor."""
+        return SensorStateClass.TOTAL_INCREASING
+    
+    @property
+    def native_min_value(self) -> float:
+        """Return min Temp."""
+        val = float(self.config_entry["DPDescr"]["Min"])
+        return val
+
+    @property
+    def native_max_value(self) -> float:
+        """Return max Temp."""
+        val = float(self.config_entry["DPDescr"]["Max"])
+        return val
+
+    @property
+    def native_step(self) -> float:
+        """Return step/resolution."""
+        val = float(self.config_entry["DPDescr"]["Resolution"])
+        return val
+
+    @property
+    def native_unit_of_measurement(self):
+        """Return the native_unit_of_measurement of the sensor."""
+        item=self.config_entry["Id"]
+        return self.coordinator.data[item]["Data"]["Unit"].strip()
+
+
 
 class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
 
