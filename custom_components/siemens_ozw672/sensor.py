@@ -2,14 +2,15 @@
 from .const import DEFAULT_NAME
 from .const import DOMAIN
 from .const import ICON
-from .const import ICON_THERMOMETER
-from .const import ICON_PERCENT
-from .const import ICON_SELECT
 from .const import SENSOR
 from .const import CONF_MENUITEMS
 from .const import CONF_DATAPOINTS
 from .const import CONF_PREFIX_FUNCTION
 from .const import CONF_PREFIX_OPLINE
+from .const import ICON_THERMOMETER
+from .const import ICON_PERCENT
+from .const import ICON_NUMERIC
+from .const import ICON_POWER
 
 from .entity import SiemensOzw672Entity
 from homeassistant.helpers.entity import Entity
@@ -21,12 +22,13 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.components.select import SelectEntity
-
 from homeassistant.const import (
     PERCENTAGE,
     TEMP_CELSIUS,
+    TEMP_FAHRENHEIT,
+    TEMP_KELVIN
 )
+from homeassistant.components.select import SelectEntity
 
 import logging
 
@@ -68,16 +70,22 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if not dp_config == "":
             if dp_config["DPDescr"]["HAType"] == "sensor":
                 _LOGGER.debug(f"SENSOR Adding Entity with config: {dp_config} and data: {dp_data}")
-                if '°' in datapoints[item]["Data"]["Unit"]:
+                if datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['°C', '°F', 'K']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672TempSensor(coordinator,dp_config)])
-                elif '%' in datapoints[item]["Data"]["Unit"]:
+                elif datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['%']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672PercentSensor(coordinator,dp_config)])
+                elif datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['kWh', 'Wh']:
+                    entities.append(dp_config)
+                    async_add_entities([SiemensOzw672EnergySensor(coordinator,dp_config)])
+                elif datapoints[item]["Data"]["Type"] == "Numeric":
+                    entities.append(dp_config)
+                    async_add_entities([SiemensOzw672NumberSensor(coordinator,dp_config)])
                 else:
                     # All unknown data types will produce a read only sensor
                     async_add_entities([SiemensOzw672Sensor(coordinator,dp_config)])
-                    continue
+                continue
 
 
 class SiemensOzw672Sensor(SiemensOzw672Entity):
@@ -176,10 +184,19 @@ class SiemensOzw672TempSensor(SiemensOzw672Entity,SensorEntity):
     @property
     def native_unit_of_measurement(self):
         """Return the native_unit_of_measurement of the sensor."""
-        return TEMP_CELSIUS
+        item=self.config_entry["Id"]
+        data=self.coordinator.data[item]["Data"]["Unit"].strip()
+        if data == "°C":
+            return TEMP_CELSIUS
+        elif data == "°F":
+            return TEMP_FAHRENHEIT
+        elif data == "K":
+            return TEMP_KELVIN
+        else:
+            return TEMP_CELSIUS
 
 
-class SiemensOzw672PercentSensor(SiemensOzw672Entity):
+class SiemensOzw672PercentSensor(SiemensOzw672Entity,SensorEntity):
 
     @property
     def name(self):
@@ -205,5 +222,113 @@ class SiemensOzw672PercentSensor(SiemensOzw672Entity):
         """Return de device class of the sensor."""
         return "siemens_ozw672__percent_device_class"
     
+    @property
+    def state_class(self):
+        """Return de device class of the sensor."""
+        return SensorStateClass.MEASUREMENT
+
+class SiemensOzw672EnergySensor(SiemensOzw672Entity,SensorEntity):
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        _LOGGER.debug(f"SiemensOzw672EnergySensor: Config: {self.config_entry}")
+        return f'{self.config_entry["entity_prefix"]}{self.config_entry["Name"]}'
+        
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        _LOGGER.debug(f'SiemensOzw672EnergySensor: Data: {self.coordinator.data}')
+        item=self.config_entry["Id"]
+        data=self.coordinator.data[item]["Data"]["Value"].strip()
+        if data.isnumeric() :
+            return int(data)
+        return data
+
+    @property
+    def native_value(self):
+        """Return the state of the sensor."""
+        _LOGGER.debug(f'SiemensOzw672EnergySensor: Native Data: {self.coordinator.data}')
+        item=self.config_entry["Id"]
+        data=self.coordinator.data[item]["Data"]["Value"].strip()
+        if data.isnumeric() :
+            return int(data)
+        return data
+
+    @property
+    def icon(self):
+        """Return the icon of the sensor."""
+        return ICON_POWER
+
+    @property
+    def device_class(self):
+        """Return de device class of the sensor."""
+        return SensorDeviceClass.ENERGY
+    
+    @property
+    def state_class(self):
+        """Return de device class of the sensor."""
+        return SensorStateClass.TOTAL_INCREASING
+    
+    @property
+    def native_unit_of_measurement(self):
+        """Return the native_unit_of_measurement of the sensor."""
+        item=self.config_entry["Id"]
+        return self.coordinator.data[item]["Data"]["Unit"].strip()
 
 
+
+class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        _LOGGER.debug(f"SiemensOzw672GenericNumberSensor: Config: {self.config_entry}")
+        return f'{self.config_entry["entity_prefix"]}{self.config_entry["Name"]}'
+        
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: Data: {self.coordinator.data}')
+        item=self.config_entry["Id"]
+        data=self.coordinator.data[item]["Data"]["Value"].strip()
+        if data.isnumeric() :
+            if isinstance(data,float):
+                return float(data)
+            else:
+                return int(data)
+        return data
+
+    @property
+    def native_value(self):
+        """Return the state of the sensor."""
+        _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: Native Data: {self.coordinator.data}')
+        item=self.config_entry["Id"]
+        data=self.coordinator.data[item]["Data"]["Value"].strip()
+        if data.isnumeric() :
+            if isinstance(data,float):
+                return float(data)
+            else:
+                return int(data)
+        return data
+
+    @property
+    def icon(self):
+        """Return the icon of the sensor."""
+        return ICON_NUMERIC
+
+    @property
+    def device_class(self):
+        """Return de device class of the sensor."""
+        return "siemens_ozw672__number_device_class"
+    
+    @property
+    def state_class(self):
+        """Return de device class of the sensor."""
+        return SensorStateClass.MEASUREMENT
+    
+    @property
+    def suggested_display_precision(self):
+        """Return the suggested_display_precision of the sensor."""
+        _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: suggested_display_precision: {self.config_entry["DPDescr"]["DecimalDigits"]}')
+        return int(self.config_entry["DPDescr"]["DecimalDigits"])

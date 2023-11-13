@@ -4,6 +4,7 @@ from .const import DOMAIN
 from .const import ICON
 from .const import ICON_THERMOMETER
 from .const import ICON_PERCENT
+from .const import ICON_NUMERIC
 from .const import SENSOR
 from .const import CONF_MENUITEMS
 from .const import CONF_DATAPOINTS
@@ -16,6 +17,11 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from homeassistant.components.number import NumberEntity, NumberMode, NumberDeviceClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 
 from homeassistant.const import (
     PERCENTAGE,
@@ -63,7 +69,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         #               - the data is in dp_data
         if not dp_config == "":
             if dp_config["DPDescr"]["HAType"] == "number":
-                _LOGGER.debug(f"NUMBER Adding Entity with config: {dp_config} and data: {dp_data}")            
+                _LOGGER.debug(f"NUMBER Adding Entity with config: {dp_config} and data: {dp_data}")          
                 if datapoints[item]["Data"]["Unit"] in ['°C', '°F', 'K']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672TempControl(coordinator,dp_config)])
@@ -71,10 +77,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672PercentControl(coordinator,dp_config)])
                 elif datapoints[item]["Data"]["Type"] == "Numeric":
+                    entities.append(dp_config)
                     async_add_entities([SiemensOzw672NumberControl(coordinator,dp_config)])
                 else:
-                    # DO nothing - unknown datapoint types will be added in the sensor domain.
                     continue
+            
 
 class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
 
@@ -208,10 +215,10 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
         """Return the icon of the sensor."""
         return ICON_PERCENT
 
-    @property
-    def device_class(self):
-        """Return de device class of the sensor."""
-        return PERCENTAGE
+    #@property
+    #def device_class(self):
+    #    """Return de device class of the sensor."""
+    #    return NumberDeviceClass.PERCENTAGE
 
     @property
     def native_value(self) -> float:
@@ -286,12 +293,7 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
     @property
     def icon(self):
         """Return the icon of the sensor."""
-        return ICON_PERCENT
-
-    @property
-    def native_value(self) -> float:
-        _LOGGER.debug(f'SiemensOzw672NumberControl: Native_Value: {value}')
-        return value
+        return ICON_NUMERIC
 
     @property
     def native_min_value(self) -> float:
@@ -310,3 +312,5 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
         """Return step/resolution."""
         val = float(self.config_entry["DPDescr"]["Resolution"])
         return val
+
+
