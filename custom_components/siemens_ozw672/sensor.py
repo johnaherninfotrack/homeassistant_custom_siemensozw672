@@ -83,7 +83,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 elif datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['%']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672PercentSensor(coordinator,dp_config)])
-                elif datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['kWh', 'Wh']:
+                elif datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['kWh', 'Wh', 'kW', 'W']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672EnergySensor(coordinator,dp_config)])
                 elif datapoints[item]["Data"]["Type"] == "Numeric":
@@ -110,7 +110,7 @@ class SiemensOzw672Sensor(SiemensOzw672Entity):
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
-            return int(data)
+            return int(float(data))
         return data
 
     @property
@@ -120,7 +120,7 @@ class SiemensOzw672Sensor(SiemensOzw672Entity):
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
-            return int(data)
+            return int(float(data))
         return data
 
     @property
@@ -163,7 +163,7 @@ class SiemensOzw672TempSensor(SiemensOzw672Entity,SensorEntity):
             if is_float(data):
                 return float(data)
             else:
-                return int(data)
+                return int(float(data))
         return data
 
     @property
@@ -176,7 +176,7 @@ class SiemensOzw672TempSensor(SiemensOzw672Entity,SensorEntity):
             if is_float(data):
                 return float(data)
             else:
-                return int(data)
+                return int(float(data))
         return data
 
     @property
@@ -255,11 +255,10 @@ class SiemensOzw672EnergySensor(SiemensOzw672Entity,SensorEntity):
         _LOGGER.debug(f'SiemensOzw672EnergySensor: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() :
-            if is_float(data):
-                return float(data)
-            else:
-                return int(data)
+        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
+            return float(data)
+        else:
+            return int(float(data))
         return data
 
     @property
@@ -268,11 +267,10 @@ class SiemensOzw672EnergySensor(SiemensOzw672Entity,SensorEntity):
         _LOGGER.debug(f'SiemensOzw672EnergySensor: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() :
-            if is_float(data):
-                return float(data)
-            else:
-                return int(data)
+        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
+            return float(data)
+        else:
+            return int(float(data))
         return data
 
     @property
@@ -311,11 +309,10 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
         _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() :
-            if is_float(data):
-                return float(data)
-            else:
-                return int(data)
+        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
+            return float(data)
+        else:
+            return int(float(data))
         return data
 
     @property
@@ -324,11 +321,10 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
         _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() :
-            if is_float(data):
-                return float(data)
-            else:
-                return int(data)
+        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
+            return float(data)
+        else:
+            return int(float(data))
         return data
 
     @property

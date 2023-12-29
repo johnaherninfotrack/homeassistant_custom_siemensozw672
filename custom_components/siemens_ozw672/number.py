@@ -76,7 +76,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 elif datapoints[item]["Data"]["Unit"] in ['%']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672PercentControl(coordinator,dp_config)])
-                elif datapoints[item]["Data"]["Unit"] in ['kWh', 'Wh']:
+                elif datapoints[item]["Data"]["Unit"] in ['kWh', 'Wh', 'kW', 'W']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672EnergyControl(coordinator,dp_config)])
                 elif datapoints[item]["Data"]["Type"] == "Numeric":
