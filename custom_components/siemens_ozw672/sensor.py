@@ -346,8 +346,8 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
         """Return de device class of the sensor."""
         return SensorStateClass.MEASUREMENT
     
-    @property
-    def suggested_display_precision(self):
-        """Return the suggested_display_precision of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: suggested_display_precision: {self.config_entry["DPDescr"]["DecimalDigits"]}')
-        return int(self.config_entry["DPDescr"]["DecimalDigits"])
+    #@property
+    #def suggested_display_precision(self):
+    #    """Return the suggested_display_precision of the sensor."""
+    #    _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: suggested_display_precision: {self.config_entry["DPDescr"]["DecimalDigits"]}')
+    #    return int(self.config_entry["DPDescr"]["DecimalDigits"])
