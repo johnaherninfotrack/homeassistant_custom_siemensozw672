@@ -143,11 +143,9 @@ class SiemensOzw672ApiClient:
         else:
             dpdata = datapoint
         id = dpdata["Id"]
+        hasValid='false'
         dptype = dpdata["DPDescr"]["Type"]
         if (dptype == "Numeric"): # and ("HasValid" in dpdata["DPDescr"]):
-            #hasValid = dpdata["DPDescr"]["HasValid"]
-        #else:
-            #hasValid='false'
             hasValid='true'
         url=self._protocol + "://" + self._host + "/api/menutree/write_datapoint.json?SessionId=" + self._sessionid +"&Id=" + id + "&Type=" + dptype + "&Value=" + value
         if (hasValid == 'true'):
