@@ -18,8 +18,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.select import SelectEntity
 
 from homeassistant.const import (
-    PERCENTAGE,
-    TEMP_CELSIUS,
+    PERCENTAGE
 )
 
 import logging

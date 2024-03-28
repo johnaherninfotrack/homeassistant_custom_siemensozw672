@@ -24,9 +24,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     PERCENTAGE,
-    TEMP_CELSIUS,
-    TEMP_FAHRENHEIT,
-    TEMP_KELVIN
+    UnitOfTemperature
 )
 from homeassistant.components.select import SelectEntity
 
@@ -200,13 +198,13 @@ class SiemensOzw672TempSensor(SiemensOzw672Entity,SensorEntity):
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Unit"].strip()
         if data == "°C":
-            return TEMP_CELSIUS
+            return UnitOfTemperature.CELSIUS
         elif data == "°F":
-            return TEMP_FAHRENHEIT
+            return UnitOfTemperature.FAHRENHEIT
         elif data == "K":
-            return TEMP_KELVIN
+            return UnitOfTemperature.KELVIN
         else:
-            return TEMP_CELSIUS
+            return UnitOfTemperature.CELSIUS
 
 
 class SiemensOzw672PercentSensor(SiemensOzw672Entity,SensorEntity):
