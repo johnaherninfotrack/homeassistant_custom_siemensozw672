@@ -81,9 +81,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 elif datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['%']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672PercentSensor(coordinator,dp_config)])
-                elif datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['kWh', 'Wh', 'kW', 'W']:
+                elif datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['kWh', 'Wh']:
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672EnergySensor(coordinator,dp_config)])
+                elif datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['kW', 'W']:
+                    entities.append(dp_config)
+                    async_add_entities([SiemensOzw672PowerSensor(coordinator,dp_config)])
                 elif datapoints[item]["Data"]["Type"] == "Numeric":
                     entities.append(dp_config)
                     async_add_entities([SiemensOzw672NumberSensor(coordinator,dp_config)])
@@ -292,7 +295,59 @@ class SiemensOzw672EnergySensor(SiemensOzw672Entity,SensorEntity):
         item=self.config_entry["Id"]
         return self.coordinator.data[item]["Data"]["Unit"].strip()
 
+class SiemensOzw672PowerSensor(SiemensOzw672Entity,SensorEntity):
 
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        _LOGGER.debug(f"SiemensOzw672PowerSensor: Config: {self.config_entry}")
+        return f'{self.config_entry["entity_prefix"]}{self.config_entry["Name"]}'
+        
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        _LOGGER.debug(f'SiemensOzw672PowerSensor: Data: {self.coordinator.data}')
+        item=self.config_entry["Id"]
+        data=self.coordinator.data[item]["Data"]["Value"].strip()
+        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
+            return float(data)
+        else:
+            return int(float(data))
+        return data
+
+    @property
+    def native_value(self):
+        """Return the state of the sensor."""
+        _LOGGER.debug(f'SiemensOzw672PowerSensor: Native Data: {self.coordinator.data}')
+        item=self.config_entry["Id"]
+        data=self.coordinator.data[item]["Data"]["Value"].strip()
+        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
+            return float(data)
+        else:
+            return int(float(data))
+        return data
+
+    @property
+    def icon(self):
+        """Return the icon of the sensor."""
+        return ICON_POWER
+
+    @property
+    def device_class(self):
+        """Return de device class of the sensor."""
+        return SensorDeviceClass.POWER
+    
+    @property
+    def state_class(self):
+        """Return de device class of the sensor."""
+        return SensorStateClass.MEASUREMENT
+    
+    @property
+    def native_unit_of_measurement(self):
+        """Return the native_unit_of_measurement of the sensor."""
+        item=self.config_entry["Id"]
+        return self.coordinator.data[item]["Data"]["Unit"].strip()
 
 class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
     @property
