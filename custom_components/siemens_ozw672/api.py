@@ -1,4 +1,3 @@
-"""Sample API Client."""
 import asyncio
 import logging
 import socket
@@ -163,7 +162,7 @@ class SiemensOzw672ApiClient:
             return {}
 
 
-    async def async_get_data_descr(self,datapoints,all_dpdata) -> dict:
+    async def async_get_data_descr(self,datapoints,all_dpdata,force=False) -> dict:
         """Get the DataPoint Descriptions for multiple datapoints from the OZW672. """
         _LOGGER.debug(f"async_get_data_descr Getting data descriptions for datapoints : {datapoints}")
         consolidated_response={}
@@ -181,7 +180,7 @@ class SiemensOzw672ApiClient:
             if (self._host == "test"):
                 response=json.loads(TESTDATA["DATAPOINTDESCR"][id])
             else:
-                if writeable == "true":  #We only need descriptions for Writeable datapoints.
+                if writeable == "true" or force:  #We only need descriptions for Writeable datapoints.
                     response = await self.api_wrapper("get", url)
                 else:  #Just return the Type - save the OZW a load of queries.
                     response=json.loads("""{"Description":{"Type":\""""+dpdata['Data']['Type']+"""\"},"Result": {"Success": "true"}}""")

@@ -3,7 +3,9 @@
 NAME = "Siemens OZW672"
 DOMAIN = "siemens_ozw672"
 DOMAIN_DATA = f"{DOMAIN}_data"
-VERSION = "0.2.7"
+VERSION = "0.2.8"
+CONF_VERSION = "1"
+CONF_MINOR_VERSION = "3"
 
 ATTRIBUTION = "Integration created by John"
 ISSUE_URL = "https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672/issues"
