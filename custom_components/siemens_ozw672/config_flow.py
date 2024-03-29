@@ -40,6 +40,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for siemens_ozw672."""
 
     VERSION = 1
+    MINOR_VERSION = 3
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     def __init__(self):
@@ -223,7 +224,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="mainmenu",
             data_schema=vol.Schema(
             {
-                vol.Required(CONF_MENUITEMS): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True))
+                vol.Required(CONF_MENUITEMS,default=False): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True))
             }
             ),
             errors=self._errors,
@@ -270,14 +271,14 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if len(datapoint_list_selector) == 0 and len(menuitem_list_selector) == 0:
             this_data_schema=vol.Schema(
             {
-                vol.Optional(CONF_DATAPOINTS): "",
+                vol.Optional(CONF_MENUITEMS): "",
                 vol.Optional(CONF_DATAPOINTS): "" 
             }
             )
         elif len(datapoint_list_selector) == 0 and len(menuitem_list_selector) > 0:
             this_data_schema=vol.Schema(
             {
-                vol.Optional(CONF_MENUITEMS): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
+                vol.Optional(CONF_MENUITEMS, default=False): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
                 vol.Optional(CONF_DATAPOINTS): "" 
             }
             )
@@ -285,14 +286,14 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             this_data_schema=vol.Schema(
                 {
                 vol.Optional(CONF_MENUITEMS): "",
-                vol.Required(CONF_DATAPOINTS): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
+                vol.Required(CONF_DATAPOINTS, default=False): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
                 }
             )
         elif len(datapoint_list_selector) > 0 and len(menuitem_list_selector) > 0:
             this_data_schema=vol.Schema(
                 {
-                vol.Optional(CONF_MENUITEMS): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
-                vol.Required(CONF_DATAPOINTS): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
+                vol.Optional(CONF_MENUITEMS, default=False): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
+                vol.Required(CONF_DATAPOINTS, default=False): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
                 }
             )
         return self.async_show_form(

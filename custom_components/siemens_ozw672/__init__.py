@@ -83,6 +83,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     return True
 
+async def async_migrate_entry(hass, entry: ConfigEntry):
+    _LOGGER.debug("Checking for Config Change on device", entry.version)
+    try: 
+        host = entry.data.get(CONF_HOST)
+        protocol = entry.data.get(CONF_PROTOCOL)
+        username = entry.data.get(CONF_USERNAME)
+        password = entry.data.get(CONF_PASSWORD)
+        session = async_get_clientsession(hass)
+        conf_httptimeout = entry.options.get(CONF_HTTPTIMEOUT)
+        conf_httpretries = entry.options.get(CONF_HTTPRETRIES)
+        if conf_httptimeout == None: conf_httptimeout = DEFAULT_HTTPTIMEOUT
+        if conf_httpretries == None: conf_httpretries = DEFAULT_HTTPRETRIES
+        client = SiemensOzw672ApiClient(host, protocol, username, password, session, timeout=conf_httptimeout, retries=conf_httpretries)
+        datapoints = entry.data.get(CONF_DATAPOINTS)
+        all_dpdata = await client.async_get_data(datapoints)
+        _LOGGER.debug(f"******* {all_dpdata}")
+        all_dpdescr = await client.async_get_data_descr(datapoints, all_dpdata)
+        newdatapoints=[]
+        for dpjson in datapoints:
+            dpdescr = all_dpdescr[dpjson["Id"]]["Description"]
+            newdatapoints.append({"Id": dpjson["Id"],"WriteAccess": dpjson["WriteAccess"],"OpLine": dpjson["OpLine"], "Name": dpdescr["Name"],"MenuItem": dpjson["MenuItem"], "DPDescr": dpdescr })
+        _data={**entry.data}
+        _data[CONF_DATAPOINTS]=newdatapoints
+        hass.config_entries.async_update_entry(entry, data=_data)
+        _LOGGER.debug("Config Check Complete")
+        return True
+    except Exception as exception:
+        _LOGGER.error(f'Config Check Failed: {repr(exception)}')
+        return False
 
 class SiemensOzw672DataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""

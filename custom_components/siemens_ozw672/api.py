@@ -168,7 +168,10 @@ class SiemensOzw672ApiClient:
         _LOGGER.debug(f"async_get_data_descr Getting data descriptions for datapoints : {datapoints}")
         consolidated_response={}
         for dp in datapoints:
-            dpjson = json.loads(dp)
+            if (type(dp) == str):
+                dpjson = json.loads(dp)
+            else:
+                dpjson = dp
             id = dpjson["Id"]
             dpdata=all_dpdata[id]
             writeable = dpjson["WriteAccess"]

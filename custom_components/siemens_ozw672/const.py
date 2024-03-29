@@ -3,7 +3,7 @@
 NAME = "Siemens OZW672"
 DOMAIN = "siemens_ozw672"
 DOMAIN_DATA = f"{DOMAIN}_data"
-VERSION = "0.1.2"
+VERSION = "0.2.5"
 
 ATTRIBUTION = "Integration created by John"
 ISSUE_URL = "https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672/issues"
@@ -98,7 +98,7 @@ TESTDATA["DATAPOINT"]["9999"]="""{"Data": {"Type": "RadioButton","Value": "On","
 TESTDATA["DATAPOINTDESCR"]={}
 TESTDATA["DATAPOINTDESCR"]["1438"]="""{"Description":{"Type":"Enumeration","Name":"DHW operating mode","Enums":[{"Text":"Off","Value":"0","IsCurrentValue":"false"},{"Text":"On","Value":"1","IsCurrentValue":"true"},{"Text":"Eco","Value":"2","IsCurrentValue":"false"}]},"Result":{"Success":"true"}}"""
 TESTDATA["DATAPOINTDESCR"]["1439"]="""{"Description":{"Type":"Numeric","Value":"52.000000","Unit":"°C","Name":"DHW temperature nominal setpoint","Min":"45.000000","Max":"60.000000","Resolution":"1.000000","FieldWitdh":"10","DecimalDigits":"0","HasValid":"false","IsValid":"true"},"Result":{"Success":"true"}}"""
-TESTDATA["DATAPOINTDESCR"]["1441"]="""{"Description":{"Type":"Enumeration","Name":"DHW release","Enums":[{"Text":"24h\/day","Value":"0","IsCurrentValue":"true"},{"Text":"Heating programs with forward shift","Value":"1","IsCurrentValue":"false"},{"Text":"Time switch program 4","Value":"2","IsCurrentValue":"false"}]},"Result":{"Success":"true"}}"""
+TESTDATA["DATAPOINTDESCR"]["1441"]="""{"Description":{"Type":"Enumeration","Name":"DHW release","Enums":[{"Text":"24h/day","Value":"0","IsCurrentValue":"true"},{"Text":"Heating programs with forward shift","Value":"1","IsCurrentValue":"false"},{"Text":"Time switch program 4","Value":"2","IsCurrentValue":"false"}]},"Result":{"Success":"true"}}"""
 TESTDATA["DATAPOINTDESCR"]["1960"]="""{"Description":{"Type":"Numeric","Value":"15.859375","Unit":"°C","Name":"Outside temp","Min":"-50.000000","Max":"50.000000","Resolution":"0.100000","FieldWitdh":"12","DecimalDigits":"1","HasValid":"false","IsValid":"true"},"Result":{"Success":"true"}}"""
 TESTDATA["DATAPOINTDESCR"]["1966"]="""{"Description":{"Type":"RadioButton","Name": "Status heat circuit pump 1","Buttons":[{"TextOpt0": "Off","TextOpt1": "On","Significance": "1","IsActive": "true"} ]},"Result": {"Success": "true"}}"""
 TESTDATA["DATAPOINTDESCR"]["1961"]="""{"Description":{"Type":"Numeric","Value":"15.0","Unit":"kWh","Name":"Test Generic Number","Min":"0.000000","Max":"2147483647.0000005","Resolution":"1.000000","FieldWitdh":"10","DecimalDigits":"0","HasValid":"false","IsValid":"true"},"Result":{"Success":"true"}}"""
