@@ -213,7 +213,7 @@ class SiemensOzw672ApiClient:
                     if writeable == "true":
                         response["Description"]["HAType"] = "switch"
                     else:
-                        response["Description"]["HAType"] = "binarysensor"
+                        response["Description"]["HAType"] = "sensor"
                 elif response["Description"]["Type"] == "Numeric":
                     if writeable == "true" and response["Description"]["Unit"] in ['°C', '°F', 'K', '%', 'kWh', 'Wh']:
                         response["Description"]["HAType"] = "number"
