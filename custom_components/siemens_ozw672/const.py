@@ -41,6 +41,7 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_HOST = "hostname"
 CONF_DEVICE = "devicename"
+CONF_DEVICE_LONGNAME = "devicelongname"
 CONF_DEVICE_ID = "deviceid"
 CONF_PROTOCOL = "protocol"
 CONF_MENUITEMS = "menuitems"
@@ -50,10 +51,14 @@ CONF_PREFIX_OPLINE = "prefix_with_opline"
 CONF_SCANINTERVAL = "scaninterval"
 CONF_HTTPTIMEOUT = "httptimeout"
 CONF_HTTPRETRIES = "httpretries"
+CONF_USE_DEVICE_LONGNAME = "use_device_longname"
 
 DEFAULT_HTTPTIMEOUT = 30
 DEFAULT_HTTPRETRIES = 2
 DEFAULT_SCANINTERVAL = 60
+DEFAULT_PREFIX_FUNCTION = True
+DEFAULT_PREFIX_OPLINE = True
+DEFAULT_USE_DEVICE_LONGNAME = False
 
 
 # Defaults
