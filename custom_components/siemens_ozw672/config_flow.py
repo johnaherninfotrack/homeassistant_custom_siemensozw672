@@ -29,6 +29,7 @@ from .const import DEFAULT_SCANINTERVAL
 from .const import DEFAULT_PREFIX_FUNCTION
 from .const import DEFAULT_PREFIX_OPLINE
 from .const import DEFAULT_USE_DEVICE_LONGNAME
+from .const import DEFAULT_OPTIONS
 from .const import CONF_USE_DEVICE_LONGNAME
 
 import json
@@ -38,14 +39,7 @@ PROTOCOL_OPTIONS = [
     selector.SelectOptionDict(value="https", label="HTTPS")
 ]
 
-DEFAULT_OPTIONS = {'httptimeout': DEFAULT_HTTPTIMEOUT, 
-    'httpretries': DEFAULT_HTTPRETRIES, 
-    'scaninterval': DEFAULT_SCANINTERVAL, 
-    CONF_PREFIX_FUNCTION: DEFAULT_PREFIX_FUNCTION, 
-    CONF_PREFIX_OPLINE: DEFAULT_PREFIX_OPLINE, 
-    CONF_USE_DEVICE_LONGNAME: DEFAULT_USE_DEVICE_LONGNAME, 
-    'switch': True, 'select': True, 'number': True, 'binary_sensor': True, 'sensor': True
-}
+
 
 import logging
 _LOGGER: logging.Logger = logging.getLogger(__package__)

@@ -37,6 +37,7 @@ from .const import STARTUP_MESSAGE
 from .const import DEFAULT_HTTPTIMEOUT
 from .const import DEFAULT_HTTPRETRIES
 from .const import DEFAULT_SCANINTERVAL
+from .const import DEFAULT_OPTIONS
 from .const import CONF_VERSION
 from .const import CONF_MINOR_VERSION
 from .const import CONF_USE_DEVICE_LONGNAME
@@ -77,6 +78,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     client = SiemensOzw672ApiClient(host, protocol, username, password, session, timeout=conf_httptimeout, retries=conf_httpretries)
     coordinator = SiemensOzw672DataUpdateCoordinator(hass, client=client, datapoints=datapoints, scaninterval=(timedelta(seconds = conf_scaninterval)))
     await coordinator.async_refresh()
+
+    await async_migrate_entry(hass,entry)
+
     
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
@@ -103,14 +107,25 @@ async def async_migrate_entry(hass, entry: ConfigEntry):
         if conf_httpretries == None: conf_httpretries = DEFAULT_HTTPRETRIES                                                                            
         client = SiemensOzw672ApiClient(host, protocol, username, password, session, timeout=conf_httptimeout, retries=conf_httpretries)               
         # Add new attribute - DeviceLongName if not exists
+        _LOGGER.debug(f'Migrating existing data: {entry.data}')
         if (entry.data.get(CONF_DEVICE_LONGNAME) == None):
-            sysinfo = await self._get_sysinfo()
-            deviceid = entry.data.get(CONF_DEVICE_ID)
-            discovereddevices = (await self._get_menutree(""))["MenuItems"]
+            sysinfo = await _get_sysinfo(client) #Gets the serial # of the OZW
+            deviceid = entry.data.get(CONF_DEVICE_ID) #DeviceID has serial number of OZW and RVS
+            discovereddevices = await _get_devices(client)
             for dd in discovereddevices:
                 dd_serial=f'{sysinfo["SerialNr"]}:{dd["SerialNr"]}'
                 if (dd_serial == deviceid):
-                    _data[CONF_DEVICE_LONGNAME] = dd["Text"]["Long"]
+                    name_string=f'{dd["Addr"]} {dd["Type"]}'
+                    _data=dict(entry.data)
+                    _data[CONF_DEVICE_LONGNAME]=name_string
+                    _options=dict(entry.options)
+                    if (_options == {}):
+                        _options = DEFAULT_OPTIONS
+                    else:
+                        _options[CONF_USE_DEVICE_LONGNAME] = False
+                    await hass.config_entries.async_update_entry(
+                        entry, title=f"{entry.data.get(CONF_DEVICE)}", data=_data, options=_options
+                    )
                     break
         datapoints = entry.data.get(CONF_DATAPOINTS)                                                                                                   
         all_dpdata = await client.async_get_data(datapoints)                                                                                                                                                                                         
@@ -128,6 +143,22 @@ async def async_migrate_entry(hass, entry: ConfigEntry):
     except Exception as exception:                                                                                                                                                                 
         _LOGGER.error(f'Config Check Failed: {repr(exception)}')                                                                                                                                   
         return False                      
+
+async def _get_sysinfo(client):
+    try:
+        info = await client.async_get_sysinfo()
+    except Exception:  # pylint: disable=broad-except
+        pass
+    return info
+
+async def _get_devices(client):
+    try:
+        devices = await client.async_get_devices()
+    except Exception as err: # pylint: disable=broad-except
+        _LOGGER.debug(f'Exception: {repr(err)}')
+        pass
+    return devices
+
 
 class SiemensOzw672DataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""
