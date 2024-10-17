@@ -9,6 +9,7 @@ from datetime import timedelta
 from .api import SiemensOzw672ApiClient
 from .const import CONF_HOST
 from .const import CONF_DEVICE
+from .const import CONF_DEVICE_LONGNAME
 from .const import CONF_DEVICE_ID
 from .const import CONF_PROTOCOL
 from .const import CONF_PASSWORD
@@ -25,6 +26,11 @@ from .const import PLATFORMS
 from .const import DEFAULT_HTTPTIMEOUT
 from .const import DEFAULT_HTTPRETRIES
 from .const import DEFAULT_SCANINTERVAL
+from .const import DEFAULT_PREFIX_FUNCTION
+from .const import DEFAULT_PREFIX_OPLINE
+from .const import DEFAULT_USE_DEVICE_LONGNAME
+from .const import DEFAULT_OPTIONS
+from .const import CONF_USE_DEVICE_LONGNAME
 
 import json
 
@@ -32,6 +38,8 @@ PROTOCOL_OPTIONS = [
     selector.SelectOptionDict(value="http", label="HTTP"),
     selector.SelectOptionDict(value="https", label="HTTPS")
 ]
+
+
 
 import logging
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -57,6 +65,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._data = None
         self._devserialnumber = ""
         self.alldevices = None
+        self._options = dict(DEFAULT_OPTIONS)
 
     async def async_step_user(self, user_input=None):
         """Handle a flow initialized by the user."""
@@ -83,7 +92,14 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             device=json.loads(user_input[CONF_DEVICE])
             ### Support a Customized name for the Device being monitored.
-            self._data[CONF_DEVICE]=device["custom_name"]
+            self._data[CONF_DEVICE]=device["Name"]
+            self._data[CONF_DEVICE_LONGNAME]=device["LongName"]
+            self._options[CONF_PREFIX_FUNCTION]=user_input[CONF_PREFIX_FUNCTION]
+            self._options[CONF_PREFIX_OPLINE]=user_input[CONF_PREFIX_OPLINE]
+            self._options[CONF_USE_DEVICE_LONGNAME]=user_input[CONF_USE_DEVICE_LONGNAME]
+            self._data[CONF_PREFIX_FUNCTION]=user_input[CONF_PREFIX_FUNCTION]
+            self._data[CONF_PREFIX_OPLINE]=user_input[CONF_PREFIX_OPLINE]
+            self._data[CONF_USE_DEVICE_LONGNAME]=user_input[CONF_USE_DEVICE_LONGNAME]
             ### Each device has a MenuTree root ID
             menutreeid=device["Id"]
             ### Get the System Info as discovery used Serial Number of the OZW672 and Serial Number of the Device.
@@ -97,7 +113,10 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             ### Support updating an existing device
             existing_entry = self.async_entry_for_existingdevice(self._data[CONF_DEVICE_ID])
             if existing_entry:
+                self._options = dict(existing_entry.options)
                 self._datapoints = existing_entry.data.get(CONF_DATAPOINTS)
+                _LOGGER.debug(f'Found existing options: {self._options}')
+                _LOGGER.debug(f'Found existing options: {self._datapoints}')
             await self.async_set_unique_id(self._devserialnumber)
             ### Now get a list of Functions/MenuItems (ignore datapoints at this level) for this device to enable the user to select what to monitor.
             self._devicemenuitems = (await self._get_menutree(menutreeid))["MenuItems"]
@@ -146,8 +165,16 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.debug("****** Recursing further through menu ******")
                 return await self.async_step_submenu()
             else: ### FINALLY... Create our discovered entities. ###
-                return self.async_create_entry(
-                    title=self._data[CONF_DEVICE], data=self._data
+                self._data["options"]=self._options
+                _LOGGER.debug(f'Addind Entities now...Data: {self._data}')
+                use_device_longname = self._options.get(CONF_USE_DEVICE_LONGNAME)
+                if (use_device_longname == True):
+                    _LOGGER.debug(f'Options: {self._options} -- Will use Device Long Name')
+                    dev_title=self._data[CONF_DEVICE_LONGNAME]
+                else:
+                    dev_title=self._data[CONF_DEVICE]
+                return self.async_create_entry(    
+                    title=dev_title, data=self._data, options=self._options
                 )
         else:
             if len(self._alldevicemenuitems) > 0:
@@ -183,9 +210,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_PROTOCOL, default="http"): selector.SelectSelector(selector.SelectSelectorConfig(options=PROTOCOL_OPTIONS)),
                 vol.Required(CONF_HOST): str, 
                 vol.Required(CONF_USERNAME): str, 
-                vol.Required(CONF_PASSWORD): str,
-                vol.Required(CONF_PREFIX_FUNCTION, default=True): bool,
-                vol.Required(CONF_PREFIX_OPLINE, default=True): bool
+                vol.Required(CONF_PASSWORD): str
             }
             ),
             errors=self._errors,
@@ -200,15 +225,19 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             devname=str(device["Text"]["Long"]).split(' ',1)[1]
             for dev in self.alldevices:
                 if dev['Addr'] == devchannel:
-                    device["custom_name"]=dev['Name']
+                    device["Name"]=dev['Name']
                 else:
-                    device["custom_name"]=devname
-            device_list_selector.append(selector.SelectOptionDict(value=json.dumps(device), label=str(device["Text"]["Long"] +" (Name:"+device["custom_name"]+")")))
+                    device["Name"]=devname
+            device["LongName"]=str(device["Text"]["Long"])
+            device_list_selector.append(selector.SelectOptionDict(value=json.dumps(device), label="Address+Device: "+str(device["Text"]["Long"] +" (Name:"+device["Name"]+")")))
         return self.async_show_form(
             step_id="device",
             data_schema=vol.Schema(
             {
-                vol.Required(CONF_DEVICE): selector.SelectSelector(selector.SelectSelectorConfig(options=device_list_selector))
+                vol.Required(CONF_DEVICE): selector.SelectSelector(selector.SelectSelectorConfig(options=device_list_selector)),
+                vol.Required(CONF_USE_DEVICE_LONGNAME, default=self._options[CONF_USE_DEVICE_LONGNAME]): bool,
+                vol.Required(CONF_PREFIX_FUNCTION, default=self._options[CONF_PREFIX_FUNCTION]): bool,
+                vol.Required(CONF_PREFIX_OPLINE, default=self._options[CONF_PREFIX_OPLINE]): bool
             }
             ),
             errors=self._errors,
@@ -259,7 +288,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             ### If we are already polling a variable - don't list it.
             already_exists=False
             for edp in existing_dp_items:
-                if edp["Name"] == dp["Text"]["Long"]:
+                if edp["Id"] == dp["Id"]:
                     already_exists=True
                     break
             ### If this is something new to monitor - add it to our Dict.
@@ -267,7 +296,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 dp["MenuItem"]=menutree_menulocation
                 datapoint_list_selector.append(selector.SelectOptionDict(value=json.dumps(dp), label=dp["Text"]["Long"]))
         this_data_schema=vol.Schema({vol.Optional(CONF_DATAPOINTS): "",vol.Optional(CONF_DATAPOINTS): ""})
-
+        
         if len(datapoint_list_selector) == 0 and len(menuitem_list_selector) == 0:
             this_data_schema=vol.Schema(
             {
@@ -278,7 +307,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         elif len(datapoint_list_selector) == 0 and len(menuitem_list_selector) > 0:
             this_data_schema=vol.Schema(
             {
-                vol.Optional(CONF_MENUITEMS, default=False): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
+                vol.Optional(CONF_MENUITEMS, default=[]): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
                 vol.Optional(CONF_DATAPOINTS): "" 
             }
             )
@@ -286,16 +315,17 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             this_data_schema=vol.Schema(
                 {
                 vol.Optional(CONF_MENUITEMS): "",
-                vol.Required(CONF_DATAPOINTS, default=False): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
+                vol.Required(CONF_DATAPOINTS, default=[]): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
                 }
             )
         elif len(datapoint_list_selector) > 0 and len(menuitem_list_selector) > 0:
             this_data_schema=vol.Schema(
                 {
-                vol.Optional(CONF_MENUITEMS, default=False): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
-                vol.Required(CONF_DATAPOINTS, default=False): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
+                vol.Optional(CONF_MENUITEMS, default=[]): selector.SelectSelector(selector.SelectSelectorConfig(options=menuitem_list_selector, multiple=True)),
+                vol.Required(CONF_DATAPOINTS, default=[]): selector.SelectSelector(selector.SelectSelectorConfig(options=datapoint_list_selector, multiple=True))
                 }
             )
+        _LOGGER.debug(f'Data schema: {this_data_schema}')
         return self.async_show_form(
             step_id="submenu",
             data_schema=this_data_schema,
@@ -374,10 +404,12 @@ class SiemensOzw672OptionsFlowHandler(config_entries.OptionsFlow):
         _LOGGER.debug(f'OptionsFlow - Existing options: {self.options}')
         self.conf_httptimeout = self.options.get(CONF_HTTPTIMEOUT)
         self.conf_httpretries = self.options.get(CONF_HTTPRETRIES)
-        self.conf_scaninterval = self.options.get(CONF_SCANINTERVAL) 
+        self.conf_scaninterval = self.options.get(CONF_SCANINTERVAL)
+        self.conf_use_device_longname = self.options.get(CONF_USE_DEVICE_LONGNAME) 
         if self.conf_httptimeout == None: self.conf_httptimeout=DEFAULT_HTTPTIMEOUT
         if self.conf_httpretries == None: self.conf_httpretries=DEFAULT_HTTPRETRIES
         if self.conf_scaninterval == None: self.conf_scaninterval=DEFAULT_SCANINTERVAL
+        if self.conf_use_device_longname ==None: self.conf_use_device_longname=DEFAULT_USE_DEVICE_LONGNAME
 
     async def async_step_init(self, user_input=None):  # pylint: disable=unused-argument
         """Manage the options."""
@@ -398,6 +430,7 @@ class SiemensOzw672OptionsFlowHandler(config_entries.OptionsFlow):
                     vol.Required(CONF_HTTPTIMEOUT, default=self.conf_httptimeout): int,
                     vol.Required(CONF_HTTPRETRIES, default=self.conf_httpretries): int,
                     vol.Required(CONF_SCANINTERVAL, default=self.conf_scaninterval): int,
+                    vol.Required(CONF_USE_DEVICE_LONGNAME, default=self.conf_use_device_longname): bool,
                     vol.Required("switch", default=self.options.get("switch", True)): bool,
                     vol.Required("select", default=self.options.get("select", True)): bool,
                     vol.Required("number", default=self.options.get("number", True)): bool,
