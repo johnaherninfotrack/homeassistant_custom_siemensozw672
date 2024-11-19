@@ -123,7 +123,8 @@ async def async_migrate_entry(hass, entry: ConfigEntry):
                         _options = DEFAULT_OPTIONS
                     else:
                         _options[CONF_USE_DEVICE_LONGNAME] = False
-                    await hass.config_entries.async_update_entry(
+                    
+                    hass.config_entries.async_update_entry(
                         entry, title=f"{entry.data.get(CONF_DEVICE)}", data=_data, options=_options
                     )
                     break
