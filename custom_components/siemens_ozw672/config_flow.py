@@ -66,6 +66,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._devserialnumber = ""
         self.alldevices = None
         self._options = dict(DEFAULT_OPTIONS)
+        self._disablenamechoice = False
 
     async def async_step_user(self, user_input=None):
         """Handle a flow initialized by the user."""
@@ -81,6 +82,10 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 # Get the device menutTrue ID
                 self.alldevices=await self._get_devices()
                 self._data=user_input
+                if CONF_DEVICE_ID in self._data:
+                    existing_entry = self.async_entry_for_existingdevice(self._data[CONF_DEVICE_ID])
+                    if existing_entry:
+                        self._disablenamechoice=True
                 return await self.async_step_device()
             else:
                 self._errors["base"] = "auth"
@@ -113,10 +118,9 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             ### Support updating an existing device
             existing_entry = self.async_entry_for_existingdevice(self._data[CONF_DEVICE_ID])
             if existing_entry:
-                self._options = dict(existing_entry.options)
                 self._datapoints = existing_entry.data.get(CONF_DATAPOINTS)
-                _LOGGER.debug(f'Found existing options: {self._options}')
-                _LOGGER.debug(f'Found existing options: {self._datapoints}')
+                # Detect if a change to the naming has occurred and updated all.
+                _LOGGER.debug(f'Found existing datapoints: {self._datapoints}')
             await self.async_set_unique_id(self._devserialnumber)
             ### Now get a list of Functions/MenuItems (ignore datapoints at this level) for this device to enable the user to select what to monitor.
             self._devicemenuitems = (await self._get_menutree(menutreeid))["MenuItems"]
@@ -166,13 +170,13 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 return await self.async_step_submenu()
             else: ### FINALLY... Create our discovered entities. ###
                 self._data["options"]=self._options
-                _LOGGER.debug(f'Addind Entities now...Data: {self._data}')
                 use_device_longname = self._options.get(CONF_USE_DEVICE_LONGNAME)
                 if (use_device_longname == True):
                     _LOGGER.debug(f'Options: {self._options} -- Will use Device Long Name')
                     dev_title=self._data[CONF_DEVICE_LONGNAME]
                 else:
                     dev_title=self._data[CONF_DEVICE]
+                _LOGGER.debug(f'Adding Entities now...Data: {self._data}')
                 return self.async_create_entry(    
                     title=dev_title, data=self._data, options=self._options
                 )
@@ -230,16 +234,25 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     device["Name"]=devname
             device["LongName"]=str(device["Text"]["Long"])
             device_list_selector.append(selector.SelectOptionDict(value=json.dumps(device), label="Address+Device: "+str(device["Text"]["Long"] +" (Name:"+device["Name"]+")")))
+        if self._disablenamechoice == False:
+            schema=vol.Schema(
+                {
+                    vol.Required(CONF_DEVICE): selector.SelectSelector(selector.SelectSelectorConfig(options=device_list_selector)),
+                    vol.Required(CONF_USE_DEVICE_LONGNAME, default=self._options[CONF_USE_DEVICE_LONGNAME]): bool,
+                    vol.Required(CONF_PREFIX_FUNCTION, default=self._options[CONF_PREFIX_FUNCTION]): bool,
+                    vol.Required(CONF_PREFIX_OPLINE, default=self._options[CONF_PREFIX_OPLINE]): bool
+                })
+        else:
+            schema=vol.Schema(
+                {
+                    vol.Required(CONF_DEVICE): selector.SelectSelector(selector.SelectSelectorConfig(options=device_list_selector)),
+                    vol.Required(CONF_PREFIX_FUNCTION, default=self._options[CONF_PREFIX_FUNCTION]): bool,
+                    vol.Required(CONF_PREFIX_OPLINE, default=self._options[CONF_PREFIX_OPLINE]): bool
+                })
+
         return self.async_show_form(
             step_id="device",
-            data_schema=vol.Schema(
-            {
-                vol.Required(CONF_DEVICE): selector.SelectSelector(selector.SelectSelectorConfig(options=device_list_selector)),
-                vol.Required(CONF_USE_DEVICE_LONGNAME, default=self._options[CONF_USE_DEVICE_LONGNAME]): bool,
-                vol.Required(CONF_PREFIX_FUNCTION, default=self._options[CONF_PREFIX_FUNCTION]): bool,
-                vol.Required(CONF_PREFIX_OPLINE, default=self._options[CONF_PREFIX_OPLINE]): bool
-            }
-            ),
+            data_schema=schema,
             errors=self._errors,
         )
 
