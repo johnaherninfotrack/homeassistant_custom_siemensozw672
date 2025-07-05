@@ -78,9 +78,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     client = SiemensOzw672ApiClient(host, protocol, username, password, session, timeout=conf_httptimeout, retries=conf_httpretries)
     coordinator = SiemensOzw672DataUpdateCoordinator(hass, client=client, datapoints=datapoints, scaninterval=(timedelta(seconds = conf_scaninterval)))
     await coordinator.async_refresh()
-
-    await async_migrate_entry(hass,entry)
-
     
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
@@ -123,7 +120,7 @@ async def async_migrate_entry(hass, entry: ConfigEntry):
                         _options = DEFAULT_OPTIONS
                     else:
                         _options[CONF_USE_DEVICE_LONGNAME] = False
-                    
+
                     hass.config_entries.async_update_entry(
                         entry, title=f"{entry.data.get(CONF_DEVICE)}", data=_data, options=_options
                     )
