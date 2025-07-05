@@ -3,7 +3,7 @@
 NAME = "Siemens OZW672"
 DOMAIN = "siemens_ozw672"
 DOMAIN_DATA = f"{DOMAIN}_data"
-VERSION = "0.3.1"
+VERSION = "0.3.5"
 CONF_VERSION = "1"
 CONF_MINOR_VERSION = "5"
 
