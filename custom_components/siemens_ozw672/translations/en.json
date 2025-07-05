@@ -9,16 +9,17 @@
           "protocol": "Protocol: http/https",
           "scaninterval": "Scan Interval",
           "username": "Username",
-          "password": "Password",
-          "prefix_with_function": "Prefix entities with Function? (eg \"RVS43.345/109->DHW - Legionella function\")",
-          "prefix_with_opline": "Prefix entities with Operating Line Number? (eg \"1640 Legionella function\")"
+          "password": "Password"
         }
       },
       "device": {
         "title": "Siemens OZW672 - Device Selection",
         "description": "Only devices with 'State: Generated' will be displayed here",
         "data": {
-          "devicename": "Select the Device to monitor"
+          "devicename": "Select the Device to monitor",
+          "use_device_longname": "Use the Device Addr+Device as the Name",
+          "prefix_with_function": "Prefix entities with Function? (eg \"RVS43.345/109->DHW - Legionella function\")",
+          "prefix_with_opline": "Prefix entities with Operating Line Number? (eg \"1640 Legionella function\")"
         }
       },
       "mainmenu": {
@@ -57,7 +58,8 @@
           "number": "Number domain enabled",
           "httptimeout": "HTTP Timeout (sec)",
           "httpretries": "HTTP Retries",
-          "scaninterval": "Polling Interval (sec)"
+          "scaninterval": "Polling Interval (sec)",
+          "use_device_longname": "Use the Device Addr+Type instead of the DeviceName"
         }
       }
     }
