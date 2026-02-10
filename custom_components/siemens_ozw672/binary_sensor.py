@@ -37,21 +37,31 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for item in datapoints:
         _LOGGER.debug(f"BINARY SENSOR Data Point Item: {datapoints[item]}")
         for dp_data in entry.data["datapoints"]:
-            if dp_data["Id"] == item :
-                dp_config=dp_data
-                if int(dp_data["OpLine"]) > 1:
-                    identifier = dp_data["OpLine"] 
-                else:
-                    identifier="00"+Item
-                ### Will use the OpLine as the identifier if it exists. If not - we will use the API ID.  
-                #   Note: the API datapoint ID can change if the tree is re-created.  
-                #   I am hoping that by using the OpLine as the identifier - we will avoid duplicate sensors
-                dp_config.update({'entry_id': entry.entry_id + "_" + identifier}) 
+            if dp_data["Id"] == item:
+                dp_config = dp_data
+                
+                # --- FIX: Improved unique identifier logic ---
+                # We combine OpLine and the internal API ID to ensure the unique_id 
+                # remains stable even if the list order or tree structure changes.
+                op_line = str(dp_data.get("OpLine", "0"))
+                api_id = str(dp_data.get("Id", item))
+                
+                # Using a formatted string to ensure a consistent and unique key
+                identifier = f"op_{op_line}_id_{api_id}"
+                
+                # Update dp_config with the persistent identifier
+                dp_config.update({'entry_id': f"{entry.entry_id}_{identifier}"})
+                # --- END FIX ---
+
                 dp_config.update({'device_id': entry.entry_id})
                 dp_config.update({'device_name': entry.data["devicename"]})
-                prefix=""
-                if entry.data[CONF_PREFIX_FUNCTION] == True: prefix=f'{dp_data["MenuItem"]} - '
-                if entry.data[CONF_PREFIX_OPLINE] == True: prefix=prefix + f'{dp_data["OpLine"]} '
+                
+                prefix = ""
+                if entry.data[CONF_PREFIX_FUNCTION] == True: 
+                    prefix = f'{dp_data["MenuItem"]} - '
+                if entry.data[CONF_PREFIX_OPLINE] == True: 
+                    prefix = prefix + f'{dp_data["OpLine"]} '
+                
                 dp_config.update({'entity_prefix': prefix})
                 break
         # At this point - the config for the datapoint is in dp_config

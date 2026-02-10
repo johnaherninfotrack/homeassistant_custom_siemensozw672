@@ -55,14 +55,21 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for dp_data in entry.data["datapoints"]:
             if dp_data["Id"] == item :
                 dp_config=dp_data
-                if int(dp_data["OpLine"]) > 1:
-                    identifier = dp_data["OpLine"] 
-                else:
-                    identifier="00"+item
-                ### Will use the OpLine as the identifier if it exists. If not - we will use the API ID.  
-                #   Note: the API datapoint ID can change if the tree is re-created.  
-                #   I am hoping that by using the OpLine as the identifier - we will avoid duplicate sensors
-                dp_config.update({'entry_id': entry.entry_id + "_" + identifier}) 
+                
+                # --- FIX START: Improved unique identifier logic ---
+                # We use a combination of OpLine and the internal API ID.
+                # This ensures the unique_id remains stable even if the list order
+                # or the tree structure changes.
+                op_line = str(dp_data.get("OpLine", "0"))
+                api_id = str(dp_data.get("Id", item))
+                
+                # Create a stable identifier used for unique_id in entity.py
+                identifier = f"op_{op_line}_id_{api_id}"
+                
+                # Update dp_config with a persistent entry_id
+                dp_config.update({'entry_id': f"{entry.entry_id}_{identifier}"})
+                # --- FIX END ---
+
                 dp_config.update({'device_id': entry.entry_id})
                 dp_config.update({'device_name': entry.data["devicename"]})
                 prefix=""
