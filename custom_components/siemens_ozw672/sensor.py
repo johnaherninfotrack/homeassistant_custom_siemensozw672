@@ -77,24 +77,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 if entry.data[CONF_PREFIX_OPLINE] == True: prefix=prefix + f'{dp_data["OpLine"]} '
                 dp_config.update({'entity_prefix': prefix})
                 break
-        for dp_data in entry.data["datapoints"]:
-            if dp_data["Id"] == item :
-                dp_config=dp_data
-                if int(dp_data["OpLine"]) > 1:
-                    identifier = dp_data["OpLine"] 
-                else:
-                    identifier="00"+item
-                ### Will use the OpLine as the identifier if it exists. If not - we will use the API ID.  
-                #   Note: the API datapoint ID can change if the tree is re-created.  
-                #   I am hoping that by using the OpLine as the identifier - we will avoid duplicate sensors
-                dp_config.update({'entry_id': entry.entry_id + "_" + identifier}) 
-                dp_config.update({'device_id': entry.entry_id})
-                dp_config.update({'device_name': entry.data["devicename"]})
-                prefix=""
-                if entry.data[CONF_PREFIX_FUNCTION] == True: prefix=f'{dp_data["MenuItem"]} - '
-                if entry.data[CONF_PREFIX_OPLINE] == True: prefix=prefix + f'{dp_data["OpLine"]} '
-                dp_config.update({'entity_prefix': prefix})
-                break
         # At this point - the config for the datapoint is in dp_config
         #               - the data is in dp_data
         if not dp_config == "":
