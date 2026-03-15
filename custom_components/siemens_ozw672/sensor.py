@@ -362,11 +362,18 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
         _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
-            return float(data)
+        # Fix to show decimal numbers
+        decimal_digits = self.config_entry.get("DPDescr", {}).get("DecimalDigits", "1")
+        if (data.isnumeric() or is_float(data)) and decimal_digits != "0":
+            try:
+                return float(data)
+            except ValueError:
+                return data
         else:
-            return int(float(data))
-        return data
+            try:
+                return int(float(data))
+            except:
+                return data
 
     @property
     def native_value(self):
@@ -374,11 +381,18 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
         _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
-            return float(data)
+        # Fix to show decimal numbers
+        decimal_digits = self.config_entry.get("DPDescr", {}).get("DecimalDigits", "1")
+        if (data.isnumeric() or is_float(data)) and decimal_digits != "0":
+            try:
+                return float(data)
+            except ValueError:
+                return data
         else:
-            return int(float(data))
-        return data
+            try:
+                return int(float(data))
+            except:
+                return data
 
     @property
     def icon(self):
