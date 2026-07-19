@@ -12,3 +12,6 @@ venv/
 .coverage
 coverage.xml
 htmlcov/
+
+# Local tooling config (Claude Code)
+.claude/
