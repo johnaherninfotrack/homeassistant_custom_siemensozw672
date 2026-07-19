@@ -9,14 +9,15 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.helpers import device_registry
 from homeassistant.helpers import entity_registry
 
 from .api import SiemensOzw672ApiClient
+from .coordinator import (
+    SiemensOzw672ConfigEntry,
+    SiemensOzw672DataUpdateCoordinator,
+)
 from .const import CONF_HOST
 from .const import CONF_DEVICE
 from .const import CONF_DEVICE_LONGNAME
@@ -90,37 +91,37 @@ def _async_repair_string_entry_versions(hass: HomeAssistant) -> None:
         )
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: SiemensOzw672ConfigEntry):
     """Set up this integration using UI."""
-    if hass.data.get(DOMAIN) is None:
-        hass.data.setdefault(DOMAIN, {})
-        _LOGGER.info(STARTUP_MESSAGE)
-    
-    _LOGGER.debug(f'STARTUP - Config: {entry}')
+    _LOGGER.info(STARTUP_MESSAGE)
+
     host = entry.data.get(CONF_HOST)
     protocol = entry.data.get(CONF_PROTOCOL)
     username = entry.data.get(CONF_USERNAME)
     password = entry.data.get(CONF_PASSWORD)
-    device = entry.data.get(CONF_DEVICE)
-    deviceid = entry.data.get(CONF_DEVICE_ID)
     datapoints = entry.data.get(CONF_DATAPOINTS)
     conf_scaninterval = entry.options.get(CONF_SCANINTERVAL)
     conf_httptimeout = entry.options.get(CONF_HTTPTIMEOUT)
     conf_httpretries = entry.options.get(CONF_HTTPRETRIES)
-    if conf_scaninterval == None: conf_scaninterval = DEFAULT_SCANINTERVAL
-    if conf_httptimeout == None: conf_httptimeout = DEFAULT_HTTPTIMEOUT
-    if conf_httpretries == None: conf_httpretries = DEFAULT_HTTPRETRIES
+    if conf_scaninterval is None: conf_scaninterval = DEFAULT_SCANINTERVAL
+    if conf_httptimeout is None: conf_httptimeout = DEFAULT_HTTPTIMEOUT
+    if conf_httpretries is None: conf_httpretries = DEFAULT_HTTPRETRIES
 
     session = async_get_clientsession(hass)
     client = SiemensOzw672ApiClient(host, protocol, username, password, session, timeout=conf_httptimeout, retries=conf_httpretries)
     coordinator = SiemensOzw672DataUpdateCoordinator(hass, client=client, datapoints=datapoints, scaninterval=(timedelta(seconds = conf_scaninterval)))
-    await coordinator.async_refresh()
-    
-    if not coordinator.last_update_success:
-        raise ConfigEntryNotReady
-    hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS) 
+    # Raises ConfigEntryNotReady (retry later) or ConfigEntryAuthFailed (prompt
+    # for credentials) as appropriate, instead of the old refresh-then-check,
+    # which reported every failure as "not ready" and retried bad passwords
+    # forever.
+    await coordinator.async_config_entry_first_refresh()
+
+    # The coordinator lives on the entry rather than in hass.data[DOMAIN], so it
+    # is cleaned up with the entry and platforms get a typed handle on it.
+    entry.runtime_data = coordinator
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
@@ -180,62 +181,28 @@ async def async_migrate_entry(hass, entry: ConfigEntry):
         return False                      
 
 async def _get_sysinfo(client):
+    """Return the OZW672 system info, or None if it could not be fetched."""
     try:
-        info = await client.async_get_sysinfo()
-    except Exception:  # pylint: disable=broad-except
-        pass
-    return info
+        return await client.async_get_sysinfo()
+    except Exception as err:  # pylint: disable=broad-except
+        _LOGGER.debug(f'Exception: {repr(err)}')
+        return None
 
 async def _get_devices(client):
+    """Return the discovered device list, or None if it could not be fetched."""
     try:
-        devices = await client.async_get_devices()
+        return await client.async_get_devices()
     except Exception as err: # pylint: disable=broad-except
         _LOGGER.debug(f'Exception: {repr(err)}')
-        pass
-    return devices
+        return None
 
+async def async_unload_entry(hass: HomeAssistant, entry: SiemensOzw672ConfigEntry) -> bool:
+    """Handle removal of an entry.
 
-class SiemensOzw672DataUpdateCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching data from the API."""
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        client: SiemensOzw672ApiClient,
-        datapoints,
-        scaninterval
-    ) -> None:
-        """Initialize."""
-        self.api = client
-        self.platforms = []
-        self.datapoints = datapoints
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=scaninterval)
-
-    async def _async_update_data(self):
-        """Update all data via the OZW672 Web API."""
-        try:
-            return await self.api.async_get_data(self.datapoints)
-            
-        except Exception as exception:
-            _LOGGER.debug(f'Exception: {repr(exception)}')
-            raise UpdateFailed() from exception
-
-    async def _async_update_data_forid(self,id):
-        """Update data for one DataPoint via the OZW672 Web API."""
-        for dp in self.datapoints:
-            if dp["Id"] == id:
-                try:
-                    return await self.api.async_get_data([dp])
-                    
-                except Exception as exception:
-                    _LOGGER.debug(f'Exception: {repr(exception)}')
-                    raise UpdateFailed() from exception
-
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Handle removal of an entry."""
-    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id)
-    return unloaded
+    Nothing to clean out of hass.data: the coordinator lives on the entry's
+    runtime_data and goes away with it.
+    """
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:

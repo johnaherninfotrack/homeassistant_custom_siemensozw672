@@ -25,8 +25,7 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Setup binary sensor platform."""
-    _LOGGER.debug(f"BINARY SENSOR - Setup_Entry.  DATA: {hass.data[DOMAIN]}")
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
 
     datapoints = coordinator.data
     # Add sensors

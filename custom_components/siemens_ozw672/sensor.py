@@ -70,8 +70,7 @@ def decimal_digits(config_entry):
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Setup sensor platform."""
-    _LOGGER.debug(f"SENSOR - Setup_Entry.  DATA: {hass.data[DOMAIN]}")
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
 
     datapoints = coordinator.data
     # Add sensors
