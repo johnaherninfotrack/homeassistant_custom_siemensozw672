@@ -35,9 +35,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
     datapoints = coordinator.data
     # Add sensors
     entities=[]
-    entityconfig=""
     for item in datapoints:
         _LOGGER.debug(f"SELECT Data Point Item: {datapoints[item]}")
+        # Reset per datapoint so a non-matching item cannot reuse the previous config.
+        dp_config=None
         for dp_data in entry.data["datapoints"]:
             if dp_data["Id"] == item :
                 dp_config=dp_data
@@ -58,7 +59,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 dp_config.update({'entity_prefix': prefix})
                 break
         ### Add our Select Entities        
-        if not dp_config == "":
+        if dp_config is not None:
             if dp_config["DPDescr"]["HAType"] == "select":
                 _LOGGER.debug(f"SELECT Adding Entity with config: {dp_config} and data: {dp_data}")
                 entities.append(dp_config)

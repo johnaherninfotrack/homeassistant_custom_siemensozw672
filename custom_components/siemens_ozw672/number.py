@@ -42,9 +42,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
     datapoints = coordinator.data
     # Add sensors
     entities=[]
-    entityconfig=""
     for item in datapoints:
         _LOGGER.debug(f"NUMBER Data Point Item: {datapoints[item]}")
+        # Reset per datapoint so a non-matching item cannot reuse the previous config.
+        dp_config=None
         for dp_data in entry.data["datapoints"]:
             if dp_data["Id"] == item :
                 dp_config=dp_data
@@ -65,7 +66,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 break
         # At this point - the config for the datapoint is in dp_config
         #               - the data is in dp_data
-        if not dp_config == "":
+        if dp_config is not None:
             if dp_config["DPDescr"]["HAType"] == "number":
                 _LOGGER.debug(f"NUMBER Adding Entity with config: {dp_config} and data: {dp_data}")          
                 if datapoints[item]["Data"]["Unit"] in ['°C', '°F', 'K']:
@@ -196,7 +197,7 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
         if decimals == '0':
             new_value=round(float(value))
         else:
-            new_value=round(float(value, int(decimals)))
+            new_value=round(float(value), int(decimals))
         _LOGGER.info(f'SiemensOzw672PercentControl - Will update ID/Opline/Name: {item}/{opline}/{name} to Value: {str(new_value)} from Value: {str(existing_value)}')
         output = await self.coordinator.api.async_write_data(self.config_entry,str(new_value))
         await self.coordinator._async_update_data_forid(item)
@@ -220,11 +221,6 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
     #def device_class(self):
     #    """Return de device class of the sensor."""
     #    return NumberDeviceClass.PERCENTAGE
-
-    @property
-    def native_value(self) -> float:
-        _LOGGER.debug(f'SiemensOzw672PercentControl: Native_Value: {value}')
-        return value
 
     @property
     def native_min_value(self) -> float:
@@ -361,7 +357,7 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
         if decimals == '0':
             new_value=round(float(value))
         else:
-            new_value=round(float(value, int(decimals)))
+            new_value=round(float(value), int(decimals))
         _LOGGER.info(f'SiemensOzw672NumberControl - Will update ID/Opline/Name: {item}/{opline}/{name} to Value: {str(new_value)} from Value: {str(existing_value)}')
         output = await self.coordinator.api.async_write_data(self.config_entry,str(new_value))
         await self.coordinator._async_update_data_forid(item)

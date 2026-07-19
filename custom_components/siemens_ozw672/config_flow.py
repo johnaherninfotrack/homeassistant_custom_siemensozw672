@@ -78,9 +78,14 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
             if valid:
                 # Get the list of devices:
-                self._discovereddevices = (await self._get_menutree(""))["MenuItems"]
-                # Get the device menutTrue ID
-                self.alldevices=await self._get_devices()
+                menutree = await self._get_menutree("")
+                self.alldevices = await self._get_devices()
+                if menutree is None or self.alldevices is None:
+                    # Credentials were accepted but the device stopped responding
+                    # part-way through discovery.
+                    self._errors["base"] = "cannot_connect"
+                    return await self._show_config_form(user_input)
+                self._discovereddevices = menutree["MenuItems"]
                 self._data=user_input
                 if CONF_DEVICE_ID in self._data:
                     existing_entry = self.async_entry_for_existingdevice(self._data[CONF_DEVICE_ID])
@@ -360,35 +365,36 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return False
 
     async def _get_sysinfo(self):
+        """Return the OZW672 system info, or None if it could not be fetched."""
         try:
-            info = await self._client.async_get_sysinfo()
-        except Exception:  # pylint: disable=broad-except
-            pass
-        return info
+            return await self._client.async_get_sysinfo()
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.debug(f'Exception: {repr(err)}')
+            return None
 
     async def _get_devices(self):
+        """Return the discovered device list, or None if it could not be fetched."""
         try:
-            devices = await self._client.async_get_devices()
+            return await self._client.async_get_devices()
         except Exception as err: # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-        return devices
+            return None
 
     async def _get_menutree(self,id):
+        """Return the menu tree for an id, or None if it could not be fetched."""
         try:
-            output = await self._client.async_get_menutree(id)
+            return await self._client.async_get_menutree(id)
         except Exception as err: # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-        return output
+            return None
 
     async def _get_datapoints(self,id):
+        """Return the datapoints for an id, or None if they could not be fetched."""
         try:
-            output = await self._client.async_get_datapoints(id)
+            return await self._client.async_get_datapoints(id)
         except Exception as err: # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-        return output
+            return None
 
     async def _get_data(self, datapoints):
         """Update data via OZW API."""
@@ -396,16 +402,15 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._client.async_get_data(datapoints)
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-            return ''
+            return None
 
     async def _get_data_descr(self,datapoints,all_dpdata):
+        """Return datapoint descriptions, or None if they could not be fetched."""
         try:
             return await self._client.async_get_data_descr(datapoints, all_dpdata)
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-            return ''
+            return None
 
 class SiemensOzw672OptionsFlowHandler(config_entries.OptionsFlow):
     """Config flow options handler for siemens_ozw672."""

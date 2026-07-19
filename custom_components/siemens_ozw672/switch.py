@@ -33,9 +33,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
     datapoints = coordinator.data
     # Add sensors
     entities=[]
-    entityconfig=""
     for item in datapoints:
         _LOGGER.debug(f"SWITCH Data Point Item: {datapoints[item]}")
+        # Reset per datapoint so a non-matching item cannot reuse the previous config.
+        dp_config=None
         for dp_data in entry.data["datapoints"]:
             if dp_data["Id"] == item :
                 dp_config=dp_data
@@ -58,7 +59,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 break
         # At this point - the config for the datapoint is in dp_config
         #               - the data is in dp_data
-        if not dp_config == "":
+        if dp_config is not None:
             if dp_config["DPDescr"]["HAType"] == "switch":
                 _LOGGER.debug(f"SWITCH Adding Entity with config: {dp_config} and data: {dp_data}")
                 entities.append(dp_config)

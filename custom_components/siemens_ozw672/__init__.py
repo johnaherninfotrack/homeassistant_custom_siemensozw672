@@ -3,7 +3,6 @@ Custom integration to integrate Siemens OZW672 with Home Assistant.
 For more details about this integration, please refer to
 https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672
 """
-import asyncio
 import logging
 from datetime import timedelta
 
@@ -50,7 +49,45 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 async def async_setup(hass: HomeAssistant, config: ConfigType):
     """Set up this integration using YAML is not supported."""
+    _async_repair_string_entry_versions(hass)
     return True
+
+
+def _async_repair_string_entry_versions(hass: HomeAssistant) -> None:
+    """Coerce config entry version/minor_version back to int.
+
+    Releases 0.3.6/0.3.7 briefly shipped CONF_VERSION/CONF_MINOR_VERSION as strings,
+    so entries created in that window are persisted with string versions. Home
+    Assistant's own async_migrate() then does `self.version > handler.VERSION`, which
+    raises TypeError: '>' not supported between instances of 'str' and 'int' before
+    async_migrate_entry() ever runs - leaving affected users unable to load the
+    integration at all (issue #39).
+
+    async_setup() runs before config entries are migrated, so this is our only chance
+    to repair the stored values.
+    """
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        version = entry.version
+        minor_version = entry.minor_version
+        if isinstance(version, int) and isinstance(minor_version, int):
+            continue
+        try:
+            new_version = int(version)
+            new_minor_version = int(minor_version)
+        except (TypeError, ValueError):
+            _LOGGER.error(
+                "Config entry %s has an unparseable version (%r.%r) and cannot be "
+                "repaired automatically; please remove and re-add the integration",
+                entry.entry_id, version, minor_version,
+            )
+            continue
+        _LOGGER.warning(
+            "Repairing config entry %s with string version %r.%r -> %d.%d (issue #39)",
+            entry.entry_id, version, minor_version, new_version, new_minor_version,
+        )
+        hass.config_entries.async_update_entry(
+            entry, version=new_version, minor_version=new_minor_version
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
@@ -195,16 +232,7 @@ class SiemensOzw672DataUpdateCoordinator(DataUpdateCoordinator):
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    unloaded = all(
-        await asyncio.gather(
-            *[
-                hass.config_entries.async_forward_entry_unload(entry, platform)
-                for platform in PLATFORMS
-                if platform in coordinator.platforms
-            ]
-        )
-    )
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unloaded
