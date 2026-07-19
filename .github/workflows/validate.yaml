@@ -43,6 +43,9 @@ jobs:
           # pytest-homeassistant-custom-component in requirements_test.txt.
           python-version: "3.13"
           cache: pip
+          # The default cache key looks for requirements.txt or pyproject.toml,
+          # neither of which this repo has.
+          cache-dependency-path: requirements_test.txt
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

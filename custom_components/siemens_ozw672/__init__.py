@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry
 from homeassistant.helpers import entity_registry
 
@@ -46,6 +47,11 @@ from .const import CONF_USE_DEVICE_LONGNAME
 #SCAN_INTERVAL = timedelta(seconds=60)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
+
+# This integration is configured entirely through the UI. Declaring the schema
+# tells Home Assistant that, instead of it warning that an integration
+# implementing async_setup has no schema at all.
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType):
