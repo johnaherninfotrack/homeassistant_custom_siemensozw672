@@ -19,6 +19,7 @@ from custom_components.siemens_ozw672.coordinator import (
     SiemensOzw672DataUpdateCoordinator,
 )
 from custom_components.siemens_ozw672.const import (
+    VERSION,
     CONF_MINOR_VERSION,
     CONF_VERSION,
     DOMAIN,
@@ -108,6 +109,51 @@ async def test_sensor_entity_is_created_with_full_precision(hass):
     states = [s for s in hass.states.async_all() if s.entity_id.startswith("sensor.")]
     assert states, "no sensor entity was created"
     assert float(states[0].state) == pytest.approx(19.8)
+
+
+async def test_device_registry_reports_real_hardware(hass):
+    """The device page shows the manufacturer and model, not the integration.
+
+    device_info previously reported the integration's own version as the model
+    ("0.3.7") and "Siemens OZW672" as the manufacturer of an RVS43.
+    """
+    from homeassistant.helpers import device_registry as dr
+
+    entry = _entry()
+    entry.add_to_hass(hass)
+
+    with patch(
+        "custom_components.siemens_ozw672.SiemensOzw672ApiClient.async_get_data",
+        new=AsyncMock(return_value=POLLED),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    devices = dr.async_get(hass).devices.get_devices_for_config_entry_id(entry.entry_id)
+    assert devices, "no device was registered"
+    device = devices[0]
+    assert device.manufacturer == "Siemens"
+    # Not the integration version, which is what it used to be.
+    assert device.model != VERSION
+    assert device.model == ENTRY_DATA["devicename"]
+
+
+async def test_entity_name_is_composed_from_device(hass):
+    """has_entity_name means HA prefixes the device name itself."""
+    entry = _entry()
+    entry.add_to_hass(hass)
+
+    with patch(
+        "custom_components.siemens_ozw672.SiemensOzw672ApiClient.async_get_data",
+        new=AsyncMock(return_value=POLLED),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    state = next(s for s in hass.states.async_all() if s.entity_id.startswith("sensor."))
+    friendly = state.attributes["friendly_name"]
+    assert friendly.startswith(ENTRY_DATA["devicename"])
+    assert "Outside temp" in friendly
 
 
 async def test_connection_failure_is_retried_not_fatal(hass):
