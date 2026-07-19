@@ -1,0 +1,51 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, so upstream Home Assistant changes that break us surface before a
+    # user reports them rather than after.
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+jobs:
+  hassfest:
+    name: hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+          # This integration ships its own brand images under
+          # custom_components/siemens_ozw672/brand/ (supported since HA 2026.3)
+          # rather than having an entry in the home-assistant/brands repo, which
+          # is what this check looks for.
+          ignore: brands
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # Must satisfy the Home Assistant version pinned by
+          # pytest-homeassistant-custom-component in requirements_test.txt.
+          python-version: "3.13"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements_test.txt
+      - name: Run tests
+        run: pytest tests --cov=custom_components.siemens_ozw672 --cov-report=term-missing
