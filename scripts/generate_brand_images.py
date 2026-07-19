@@ -106,22 +106,23 @@ def make_icon(px, dark=False):
 
 
 def make_logo(h, dark=False):
-    """Wide logo: flame mark + wordmark, transparent background."""
+    """Wide logo: flame mark + model number, transparent background.
+
+    Carries no manufacturer wordmark, matching the icon. See make_icon for
+    the reasoning.
+    """
     S = h * 4
-    W = int(S * 3.1)
+    W = int(S * 2.6)
     img = Image.new("RGBA", (W, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
 
     fg = (255, 255, 255, 255) if dark else (17, 24, 28, 255)
     accent = (24, 160, 165, 255) if dark else TEAL_A + (255,)
 
-    draw_flame(d, S * 0.34, S * 0.5, S * 0.44, S * 0.70, accent, inner=(255, 255, 255, 0))
+    draw_flame(d, S * 0.30, S * 0.5, S * 0.44, S * 0.74, accent, inner=(255, 255, 255, 0))
 
-    f_small = _fit(d, "SIEMENS", NARROW, W * 0.52, int(S * 0.30))
-    f_big = _fit(d, "OZW672", BOLD, W * 0.60, int(S * 0.46))
-    x = S * 0.68
-    d.text((x, S * 0.20), "SIEMENS", font=f_small, fill=(fg[0], fg[1], fg[2], 190))
-    d.text((x, S * 0.46), "OZW672", font=f_big, fill=fg)
+    f_big = _fit(d, "OZW672", BOLD, W - S * 0.72, int(S * 0.60))
+    d.text((S * 0.62, S * 0.52), "OZW672", font=f_big, fill=fg, anchor="lm")
 
     out = img.resize((W // 4, h), Image.LANCZOS)
     name = f"{'dark_' if dark else ''}logo{'@2x' if h == 256 else ''}.png"
