@@ -201,7 +201,13 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return SiemensOzw672OptionsFlowHandler(config_entry)
+        """Return the options flow handler.
+
+        The handler takes no arguments: Home Assistant supplies the config entry via
+        the inherited OptionsFlow.config_entry property. Passing it to the constructor
+        has been deprecated since HA 2024.11.
+        """
+        return SiemensOzw672OptionsFlowHandler()
 
     def async_entry_for_existingdevice(self, deviceserialnumber):
         """Find an existing entry for a serialnumber."""
@@ -415,22 +421,27 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 class SiemensOzw672OptionsFlowHandler(config_entries.OptionsFlow):
     """Config flow options handler for siemens_ozw672."""
 
-    def __init__(self, config_entry):
-        """Initialize HACS options flow."""
-        self.config_entry = config_entry
-        self.options = dict(config_entry.options)
-        _LOGGER.debug(f'OptionsFlow - Existing options: {self.options}')
-        self.conf_httptimeout = self.options.get(CONF_HTTPTIMEOUT)
-        self.conf_httpretries = self.options.get(CONF_HTTPRETRIES)
-        self.conf_scaninterval = self.options.get(CONF_SCANINTERVAL)
-        self.conf_use_device_longname = self.options.get(CONF_USE_DEVICE_LONGNAME) 
-        if self.conf_httptimeout == None: self.conf_httptimeout=DEFAULT_HTTPTIMEOUT
-        if self.conf_httpretries == None: self.conf_httpretries=DEFAULT_HTTPRETRIES
-        if self.conf_scaninterval == None: self.conf_scaninterval=DEFAULT_SCANINTERVAL
-        if self.conf_use_device_longname ==None: self.conf_use_device_longname=DEFAULT_USE_DEVICE_LONGNAME
+    def __init__(self):
+        """Initialize options flow.
+
+        Nothing is read from the config entry here: self.config_entry is not yet
+        available during construction. It is populated in async_step_init instead.
+        """
+        self.options = None
 
     async def async_step_init(self, user_input=None):  # pylint: disable=unused-argument
         """Manage the options."""
+        if self.options is None:
+            self.options = dict(self.config_entry.options)
+            _LOGGER.debug(f'OptionsFlow - Existing options: {self.options}')
+            self.conf_httptimeout = self.options.get(CONF_HTTPTIMEOUT)
+            self.conf_httpretries = self.options.get(CONF_HTTPRETRIES)
+            self.conf_scaninterval = self.options.get(CONF_SCANINTERVAL)
+            self.conf_use_device_longname = self.options.get(CONF_USE_DEVICE_LONGNAME)
+            if self.conf_httptimeout is None: self.conf_httptimeout=DEFAULT_HTTPTIMEOUT
+            if self.conf_httpretries is None: self.conf_httpretries=DEFAULT_HTTPRETRIES
+            if self.conf_scaninterval is None: self.conf_scaninterval=DEFAULT_SCANINTERVAL
+            if self.conf_use_device_longname is None: self.conf_use_device_longname=DEFAULT_USE_DEVICE_LONGNAME
         return await self.async_step_user()
 
     async def async_step_user(self, user_input=None):
