@@ -40,6 +40,33 @@ Sensors Supported
 ![example][exampleimg]
 
 
+## Disclaimer
+
+**This is an independent, unofficial, community-developed project. It is not affiliated
+with, endorsed by, sponsored by, or approved by Siemens AG or any of its subsidiaries.**
+
+"Siemens", "OZW672", "RVS43", "AVS73" and other product and model designations are
+trademarks or registered trademarks of Siemens AG or their respective owners. They are used
+here **nominatively** — that is, solely to identify the hardware this integration
+communicates with, as is permitted for accurate description of interoperability. No claim
+to those marks is made or implied.
+
+The icon and logo shipped with this integration are **original artwork created for this
+project**. They are not Siemens assets, are not reproductions of any Siemens logo or
+wordmark, and do not represent Siemens branding or an official Siemens product.
+
+This integration talks to the OZW672 over the local HTTP API exposed by the device itself.
+It contains no Siemens source code, firmware, or other proprietary Siemens material, and
+distributes none.
+
+The software is provided under the MIT License **without warranty of any kind** — see
+[LICENSE](LICENSE). You use it, and any changes it writes to your equipment, at your own
+risk.
+
+If you are a rights holder and believe anything here misrepresents your brand, please open
+an issue on the [issue tracker](https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672/issues)
+and it will be addressed promptly.
+
 ## Installation
 
 1. Use [HACS](https://hacs.xyz/docs/setup/download), in `HACS > Integrations Cick the three dots on the top right and select "Custom Repositories" and add a link to this GitHub Repository.
