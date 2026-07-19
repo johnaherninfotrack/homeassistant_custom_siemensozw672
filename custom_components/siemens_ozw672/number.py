@@ -11,7 +11,7 @@ from .const import CONF_DATAPOINTS
 from .const import CONF_PREFIX_FUNCTION
 from .const import CONF_PREFIX_OPLINE
 
-from .entity import SiemensOzw672Entity
+from .entity import SiemensOzw672Entity, build_datapoint_configs
 from homeassistant.helpers.entity import Entity
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -32,56 +32,35 @@ import logging
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
+def _control_class_for(reading):
+    """Pick the number class for a polled reading.
+
+    Built here rather than at module level because the classes are defined
+    below.
+    """
+    by_unit = {
+        "°C": SiemensOzw672TempControl,
+        "°F": SiemensOzw672TempControl,
+        "K": SiemensOzw672TempControl,
+        "%": SiemensOzw672PercentControl,
+        "kWh": SiemensOzw672EnergyControl,
+        "Wh": SiemensOzw672EnergyControl,
+        "kW": SiemensOzw672EnergyControl,
+        "W": SiemensOzw672EnergyControl,
+    }
+    data = (reading or {}).get("Data") or {}
+    return by_unit.get((data.get("Unit") or "").strip(), SiemensOzw672NumberControl)
+
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Setup number platform."""
-    _LOGGER.debug(f"NUMBER - Setup_Entry.  DATA: {hass.data[DOMAIN]}")  
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
+    configs = build_datapoint_configs(entry, coordinator, "number")
+    async_add_entities(
+        _control_class_for(coordinator.data[dp_config["Id"]])(coordinator, dp_config)
+        for dp_config in configs
+    )
 
-    datapoints = coordinator.data
-    # Add sensors
-    entities=[]
-    for item in datapoints:
-        _LOGGER.debug(f"NUMBER Data Point Item: {datapoints[item]}")
-        # Reset per datapoint so a non-matching item cannot reuse the previous config.
-        dp_config=None
-        for dp_data in entry.data["datapoints"]:
-            if dp_data["Id"] == item :
-                dp_config=dp_data
-                if int(dp_data["OpLine"]) > 1:
-                    identifier = dp_data["OpLine"] 
-                else:
-                    identifier="00"+item
-                ### Will use the OpLine as the identifier if it exists. If not - we will use the API ID.  
-                #   Note: the API datapoint ID can change if the tree is re-created.  
-                #   I am hoping that by using the OpLine as the identifier - we will avoid duplicate sensors
-                dp_config.update({'entry_id': entry.entry_id + "_" + identifier})  
-                dp_config.update({'device_id': entry.entry_id})
-                dp_config.update({'device_name': entry.data["devicename"]})
-                prefix=""
-                if entry.data[CONF_PREFIX_FUNCTION] == True: prefix=f'{dp_data["MenuItem"]} - '
-                if entry.data[CONF_PREFIX_OPLINE] == True: prefix=prefix + f'{dp_data["OpLine"]} '
-                dp_config.update({'entity_prefix': prefix})
-                break
-        # At this point - the config for the datapoint is in dp_config
-        #               - the data is in dp_data
-        if dp_config is not None:
-            if dp_config["DPDescr"]["HAType"] == "number":
-                _LOGGER.debug(f"NUMBER Adding Entity with config: {dp_config} and data: {dp_data}")          
-                if datapoints[item]["Data"]["Unit"] in ['°C', '°F', 'K']:
-                    entities.append(dp_config)
-                    async_add_entities([SiemensOzw672TempControl(coordinator,dp_config)])
-                elif datapoints[item]["Data"]["Unit"] in ['%']:
-                    entities.append(dp_config)
-                    async_add_entities([SiemensOzw672PercentControl(coordinator,dp_config)])
-                elif datapoints[item]["Data"]["Unit"] in ['kWh', 'Wh', 'kW', 'W']:
-                    entities.append(dp_config)
-                    async_add_entities([SiemensOzw672EnergyControl(coordinator,dp_config)])
-                elif datapoints[item]["Data"]["Type"] == "Numeric":
-                    entities.append(dp_config)
-                    async_add_entities([SiemensOzw672NumberControl(coordinator,dp_config)])
-                else:
-                    continue
-            
 
 class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
 

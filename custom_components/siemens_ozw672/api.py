@@ -14,6 +14,28 @@ from .const import TESTDATA
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 HEADERS = {"Content-type": "application/json; charset=UTF-8"}
 
+
+class SiemensOzw672ApiError(Exception):
+    """Base error raised by the OZW672 API client.
+
+    Previously every failure path returned None or {}, so callers could not tell
+    "the device said no" from "the device is unreachable" from "that worked" -
+    and a failed write was reported to the user as success.
+    """
+
+
+class SiemensOzw672AuthError(SiemensOzw672ApiError):
+    """Authentication with the OZW672 was rejected.
+
+    Raised for bad credentials. Home Assistant turns this into a reauth prompt
+    rather than retrying forever against a password that will never work.
+    """
+
+
+class SiemensOzw672ConnectionError(SiemensOzw672ApiError):
+    """The OZW672 could not be reached, or stopped responding."""
+
+
 class SiemensOzw672ApiClient:
     def __init__(
         self, host: str, protocol: str, username: str, password: str, session: aiohttp.ClientSession, timeout: int, retries: int
@@ -31,19 +53,29 @@ class SiemensOzw672ApiClient:
         self._retries = retries
 
     async def async_get_sessionid(self) -> bool:
-        """Login to the OZW672 and get a SessionID"""
-        url=self._protocol + "://" + self._host + "/api/auth/login.json?user=" + self._username + "&pwd=" + Parse.quote(self._password)
+        """Login to the OZW672 and get a SessionID.
+
+        Raises SiemensOzw672AuthError if the device rejects the credentials, and
+        SiemensOzw672ConnectionError if it could not be reached. Returning False
+        for both, as this used to, meant a wrong password looked identical to a
+        pulled network cable.
+        """
+        url=self._protocol + "://" + self._host + "/api/auth/login.json?user=" + Parse.quote(self._username) + "&pwd=" + Parse.quote(self._password)
         _LOGGER.debug(f"OZW Login to host: {self._host}")
         if (self._host == "test"):
             response=json.loads(TESTDATA["PREAUTH"])
         else:
             response = await self.api_wrapper("get_preauth", url)
-        success = response["Result"]["Success"]
-        if (success == "true"): 
+        if not isinstance(response, dict) or "Result" not in response:
+            raise SiemensOzw672ConnectionError(
+                f"No usable response from {self._host} when logging in"
+            )
+        if response["Result"].get("Success") == "true":
             self._sessionid = response["SessionId"]
             return True
-        _LOGGER.debug(f"Failed to Login: {response}")
-        return False
+        raise SiemensOzw672AuthError(
+            f"The OZW672 at {self._host} rejected the supplied credentials"
+        )
 
     async def async_get_sysinfo(self) -> dict:
         """ Sample: ./api/device/info.json?SessionId=1278af3d-a62d-4def-938e-ae2df141500e """
@@ -241,12 +273,13 @@ class SiemensOzw672ApiClient:
             data = {}
         if headers is None:
             headers = {}
+        last_error = None
 
-        for x in range(self._retries):  #### YES - WE NEED TO RETRY OCCASSIONALY
+        for x in range(max(self._retries, 1)):  #### YES - WE NEED TO RETRY OCCASSIONALY
             try:
                 async with asyncio.timeout(self._timeout):
                     if method == "get_preauth":
-                        response = await self._session.get(url, headers=headers,verify_ssl=False)
+                        response = await self._session.get(url, headers=headers,ssl=False)
                         jsonresponse = await response.json()
                         _LOGGER.debug(f"PREAuth: {jsonresponse}")
                         return jsonresponse
@@ -254,7 +287,7 @@ class SiemensOzw672ApiClient:
                         cache_sessionid = self._sessionid
                         logurl=url.replace(f"SessionId={cache_sessionid}", "SessionId=XXXXXX")
                         _LOGGER.debug(f"HTTP GET url: {logurl}")
-                        response = await self._session.get(url, headers=headers,verify_ssl=False)
+                        response = await self._session.get(url, headers=headers,ssl=False)
                         jsonresponse = await response.json()
                         _LOGGER.debug(f"API GET: {jsonresponse}")
                         if (jsonresponse["Result"]["Success"] == "false"):
@@ -278,27 +311,34 @@ class SiemensOzw672ApiClient:
                         else:
                             return jsonresponse
 
-            except asyncio.TimeoutError as exception:
-                _LOGGER.error(
-                    "Timeout error fetching information from %s - %s",
-                    url,
-                    exception,
+            except (SiemensOzw672AuthError, SiemensOzw672ConnectionError):
+                # Raised by the re-authentication above. Retrying the same
+                # request will not help, so let it out.
+                raise
+
+            except TimeoutError as exception:
+                last_error = exception
+                _LOGGER.debug(
+                    "Timeout fetching information from %s (attempt %s/%s): %s",
+                    url, x + 1, self._retries, exception,
                 )
-                if x < self._retries:
-                    _LOGGER.error("**** Module will retry ****")
-                    pass
 
             except (KeyError, TypeError) as exception:
-                _LOGGER.error(
-                    "Error parsing information from %s - %s",
-                    url,
-                    exception,
+                last_error = exception
+                _LOGGER.debug(
+                    "Error parsing information from %s (attempt %s/%s): %s",
+                    url, x + 1, self._retries, exception,
                 )
             except (aiohttp.ClientError, socket.gaierror) as exception:
-                _LOGGER.error(
-                    "Error fetching information from %s - %s",
-                    url,
-                    exception,
+                last_error = exception
+                _LOGGER.debug(
+                    "Error fetching information from %s (attempt %s/%s): %s",
+                    url, x + 1, self._retries, exception,
                 )
-            except Exception as exception:  # pylint: disable=broad-except
-                _LOGGER.error("Something really wrong happened! - %s", exception)
+
+        # Every attempt failed. Previously this fell off the end and implicitly
+        # returned None, which callers then subscripted - turning a network
+        # problem into a confusing TypeError somewhere unrelated.
+        raise SiemensOzw672ConnectionError(
+            f"No response from {self._host} after {self._retries} attempt(s)"
+        ) from last_error

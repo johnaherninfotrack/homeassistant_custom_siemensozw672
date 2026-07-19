@@ -50,10 +50,7 @@
       "timeout": "Timeout connecting to the device."
     },
     "abort": {
-      "single_instance_allowed": "Only a single instance is allowed.",
-      "already_configured": "This device is already set up. To add or change the datapoints it monitors, use Reconfigure on the existing entry rather than adding it again.",
-      "wrong_device": "That is a different device to the one this entry was set up for. Reconfigure can only change the datapoints of the same device.",
-      "reconfigure_successful": "The monitored datapoints were updated."
+      "single_instance_allowed": "Only a single instance is allowed."
     }
   },
   "options": {

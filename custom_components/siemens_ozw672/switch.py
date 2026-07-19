@@ -7,7 +7,7 @@ from .const import ICON_SWITCH
 from .const import SWITCH
 from .const import CONF_PREFIX_FUNCTION
 from .const import CONF_PREFIX_OPLINE
-from .entity import SiemensOzw672Entity
+from .entity import SiemensOzw672Entity, build_datapoint_configs
 
 from homeassistant.helpers.entity import Entity
 from homeassistant.core import HomeAssistant
@@ -25,47 +25,11 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Setup switch platform."""
-    _LOGGER.debug(f"SWITCH - Setup_Entry.  DATA: {hass.data[DOMAIN]}")  
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-
-    datapoints = coordinator.data
-    # Add sensors
-    entities=[]
-    for item in datapoints:
-        _LOGGER.debug(f"SWITCH Data Point Item: {datapoints[item]}")
-        # Reset per datapoint so a non-matching item cannot reuse the previous config.
-        dp_config=None
-        for dp_data in entry.data["datapoints"]:
-            if dp_data["Id"] == item :
-                dp_config=dp_data
-                if int(dp_data["OpLine"]) > 1:
-                    identifier = dp_data["OpLine"] 
-                else:
-                    identifier="00"+item
-                ### Will use the OpLine as the identifier if it exists. If not - we will use the API ID.  
-                #   Note: the API datapoint ID can change if the tree is re-created.  
-                #   I am hoping that by using the OpLine as the identifier - we will avoid duplicate sensors
-                dp_config.update({'entry_id': entry.entry_id + "_" + identifier}) 
-                dp_config.update({'device_id': entry.entry_id})
-                dp_config.update({'device_name': entry.data["devicename"]})
-                prefix=""
-                if entry.data[CONF_PREFIX_FUNCTION] == True: 
-                    prefix=f'{dp_data["MenuItem"]} - '
-                if entry.data[CONF_PREFIX_OPLINE] == True: 
-                    prefix=prefix + f'{dp_data["OpLine"]} '
-                dp_config.update({'entity_prefix': prefix})
-                break
-        # At this point - the config for the datapoint is in dp_config
-        #               - the data is in dp_data
-        if dp_config is not None:
-            if dp_config["DPDescr"]["HAType"] == "switch":
-                _LOGGER.debug(f"SWITCH Adding Entity with config: {dp_config} and data: {dp_data}")
-                entities.append(dp_config)
-                async_add_entities([SiemensOzw672BinarySwitch(coordinator,dp_config)])
-            else:
-                # DO nothing - unknown datapoint types will be added in the sensor domain.
-                continue
-
+    coordinator = entry.runtime_data
+    configs = build_datapoint_configs(entry, coordinator, "switch")
+    async_add_entities(
+        SiemensOzw672BinarySwitch(coordinator, dp_config) for dp_config in configs
+    )
 
 class SiemensOzw672BinarySwitch(SiemensOzw672Entity, SwitchEntity):
     """siemens_ozw672 switch class."""
