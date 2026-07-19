@@ -48,7 +48,7 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for siemens_ozw672."""
 
     VERSION = 1
-    MINOR_VERSION = 3
+    MINOR_VERSION = 5
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     def __init__(self):
