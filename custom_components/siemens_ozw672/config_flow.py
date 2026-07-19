@@ -181,7 +181,6 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     dev_title=self._data[CONF_DEVICE_LONGNAME]
                 else:
                     dev_title=self._data[CONF_DEVICE]
-                _LOGGER.debug(f'Adding Entities now...Data: {self._data}')
                 return self.async_create_entry(    
                     title=dev_title, data=self._data, options=self._options
                 )

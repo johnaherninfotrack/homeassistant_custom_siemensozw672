@@ -240,7 +240,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry."""
-    _LOGGER.debug(f'Calling async_reload_entry {entry.as_dict()}')
 
     if (entry.options[CONF_USE_DEVICE_LONGNAME] == True):
         use_device_name = entry.data[CONF_DEVICE_LONGNAME]

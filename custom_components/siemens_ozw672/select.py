@@ -29,8 +29,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Setup select platform."""
     _LOGGER.debug(f"SELECT - Setup_Entry.  DATA: {hass.data[DOMAIN]}")    
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    _LOGGER.debug(f"SELECT ***** Data: {coordinator.data}")
-    _LOGGER.debug(f"SELECT ***** Config: {entry.as_dict()}")
 
     datapoints = coordinator.data
     # Add sensors

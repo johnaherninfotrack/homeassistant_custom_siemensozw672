@@ -36,8 +36,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Setup number platform."""
     _LOGGER.debug(f"NUMBER - Setup_Entry.  DATA: {hass.data[DOMAIN]}")  
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    _LOGGER.debug(f"NUMBER ***** Data: {coordinator.data}")
-    _LOGGER.debug(f"NUMBER ***** Config: {entry.as_dict()}")
 
     datapoints = coordinator.data
     # Add sensors
@@ -96,7 +94,6 @@ class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672TempControl: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return float(data)
@@ -122,7 +119,6 @@ class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672TempControl: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return float(data)
@@ -181,7 +177,6 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672PercentControl: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return float(data)
@@ -207,7 +202,6 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672PercentControl: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return float(data)
@@ -258,7 +252,6 @@ class SiemensOzw672EnergyControl(SiemensOzw672Entity,NumberEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672EnergyControl: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return float(data)
@@ -284,7 +277,6 @@ class SiemensOzw672EnergyControl(SiemensOzw672Entity,NumberEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672EnergyControl: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return float(data)
@@ -341,7 +333,6 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672NumberControl: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return float(data)
@@ -367,7 +358,6 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672NumberControl: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return float(data)

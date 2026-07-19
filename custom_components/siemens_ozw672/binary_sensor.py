@@ -27,8 +27,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Setup binary sensor platform."""
     _LOGGER.debug(f"BINARY SENSOR - Setup_Entry.  DATA: {hass.data[DOMAIN]}")
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    _LOGGER.debug(f"BINARY SENSOR ***** Data: {coordinator.data}")
-    _LOGGER.debug(f"BINARY SENSOR ***** Config: {entry.as_dict()}")
 
     datapoints = coordinator.data
     # Add sensors
