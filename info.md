@@ -21,6 +21,22 @@
 
 ![example][exampleimg]
 
+## Disclaimer
+
+**Independent, unofficial, community-developed project. Not affiliated with, endorsed by,
+sponsored by, or approved by Siemens AG or any of its subsidiaries.**
+
+"Siemens", "OZW672", "RVS43" and other product and model designations are trademarks or
+registered trademarks of Siemens AG or their respective owners, used here nominatively only
+to identify the hardware this integration communicates with. The bundled icon and logo are
+original artwork created for this project — they are not Siemens assets and do not represent
+Siemens branding.
+
+This integration uses the local HTTP API exposed by the device itself and contains no
+Siemens source code, firmware, or other proprietary material. Provided under the MIT License
+without warranty of any kind; you use it, and any changes it writes to your equipment, at
+your own risk.
+
 {% if not installed %}
 
 ## Installation

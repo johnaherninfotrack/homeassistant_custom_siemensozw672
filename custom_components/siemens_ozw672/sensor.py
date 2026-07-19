@@ -43,15 +43,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Setup sensor platform."""
     _LOGGER.debug(f"SENSOR - Setup_Entry.  DATA: {hass.data[DOMAIN]}")
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    _LOGGER.debug(f"SENSOR ***** Data: {coordinator.data}")
-    _LOGGER.debug(f"SENSOR ***** Config: {entry.as_dict()}")
 
     datapoints = coordinator.data
     # Add sensors
     entities=[]
-    entityconfig=""
     for item in datapoints:
         _LOGGER.debug(f"SENSOR Data Point Item: {datapoints[item]}")
+        # Reset per datapoint so a non-matching item cannot reuse the previous config.
+        dp_config=None
         for dp_data in entry.data["datapoints"]:
             if dp_data["Id"] == item :
                 dp_config=dp_data
@@ -72,7 +71,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 break
         # At this point - the config for the datapoint is in dp_config
         #               - the data is in dp_data
-        if not dp_config == "":
+        if dp_config is not None:
             if dp_config["DPDescr"]["HAType"] == "sensor":
                 _LOGGER.debug(f"SENSOR Adding Entity with config: {dp_config} and data: {dp_data}")
                 if datapoints[item]["Data"]["Type"] == "Numeric" and datapoints[item]["Data"]["Unit"] in ['°C', '°F', 'K']:
@@ -107,7 +106,6 @@ class SiemensOzw672Sensor(SiemensOzw672Entity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672Sensor: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
@@ -117,7 +115,6 @@ class SiemensOzw672Sensor(SiemensOzw672Entity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672Sensor: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
@@ -157,7 +154,6 @@ class SiemensOzw672TempSensor(SiemensOzw672Entity,SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672Sensor: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
@@ -170,7 +166,6 @@ class SiemensOzw672TempSensor(SiemensOzw672Entity,SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672Sensor: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() :
@@ -221,7 +216,6 @@ class SiemensOzw672PercentSensor(SiemensOzw672Entity,SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672PercentSensor: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         return f'{data}%'
@@ -253,7 +247,6 @@ class SiemensOzw672EnergySensor(SiemensOzw672Entity,SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672EnergySensor: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
@@ -265,7 +258,6 @@ class SiemensOzw672EnergySensor(SiemensOzw672Entity,SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672EnergySensor: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
@@ -307,7 +299,6 @@ class SiemensOzw672PowerSensor(SiemensOzw672Entity,SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672PowerSensor: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
@@ -319,7 +310,6 @@ class SiemensOzw672PowerSensor(SiemensOzw672Entity,SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672PowerSensor: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
@@ -359,7 +349,6 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
@@ -371,7 +360,6 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: Native Data: {self.coordinator.data}')
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
         if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":

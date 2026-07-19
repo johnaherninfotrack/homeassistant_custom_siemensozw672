@@ -8,7 +8,6 @@ import re
 import json
 
 import aiohttp
-import async_timeout
 
 from .const import TESTDATA
 
@@ -234,13 +233,18 @@ class SiemensOzw672ApiClient:
         return consolidated_response
 
     async def api_wrapper(
-        self, method: str, url: str, data: dict = {}, headers: dict = {}
+        self, method: str, url: str, data: dict = None, headers: dict = None,
+        _reauth_attempted: bool = False
     ) -> dict:
         """Get information from the OZW WebAPI."""
+        if data is None:
+            data = {}
+        if headers is None:
+            headers = {}
 
         for x in range(self._retries):  #### YES - WE NEED TO RETRY OCCASSIONALY
             try:
-                async with async_timeout.timeout(self._timeout): #, loop=asyncio.get_event_loop()):
+                async with asyncio.timeout(self._timeout):
                     if method == "get_preauth":
                         response = await self._session.get(url, headers=headers,verify_ssl=False)
                         jsonresponse = await response.json()
@@ -255,10 +259,19 @@ class SiemensOzw672ApiClient:
                         _LOGGER.debug(f"API GET: {jsonresponse}")
                         if (jsonresponse["Result"]["Success"] == "false"):
                             if (jsonresponse["Result"]["Error"]["Nr"] in ['1','2']):
+                                if _reauth_attempted:
+                                    # Re-authenticating did not help. Returning rather than
+                                    # recursing again, which previously looped until
+                                    # RecursionError when the session kept being rejected.
+                                    _LOGGER.error(
+                                        "Re-authentication did not resolve session error for url: %s",
+                                        logurl,
+                                    )
+                                    return jsonresponse
                                 await self.async_get_sessionid()
                                 # Search and replace SessionId
                                 newurl = url.replace(f"SessionId={cache_sessionid}", f"SessionId={self._sessionid}")
-                                return await self.api_wrapper("get", newurl)
+                                return await self.api_wrapper("get", newurl, _reauth_attempted=True)
                             else :
                                 _LOGGER.error(f'Failed API call with error: {jsonresponse["Result"]["Error"]["Txt"]} for url:{logurl}')
                                 return jsonresponse

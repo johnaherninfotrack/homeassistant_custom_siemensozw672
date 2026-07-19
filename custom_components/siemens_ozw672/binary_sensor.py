@@ -27,22 +27,21 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Setup binary sensor platform."""
     _LOGGER.debug(f"BINARY SENSOR - Setup_Entry.  DATA: {hass.data[DOMAIN]}")
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    _LOGGER.debug(f"BINARY SENSOR ***** Data: {coordinator.data}")
-    _LOGGER.debug(f"BINARY SENSOR ***** Config: {entry.as_dict()}")
 
     datapoints = coordinator.data
     # Add sensors
     entities=[]
-    entityconfig=""
     for item in datapoints:
         _LOGGER.debug(f"BINARY SENSOR Data Point Item: {datapoints[item]}")
+        # Reset per datapoint so a non-matching item cannot reuse the previous config.
+        dp_config=None
         for dp_data in entry.data["datapoints"]:
             if dp_data["Id"] == item :
                 dp_config=dp_data
                 if int(dp_data["OpLine"]) > 1:
-                    identifier = dp_data["OpLine"] 
+                    identifier = dp_data["OpLine"]
                 else:
-                    identifier="00"+Item
+                    identifier="00"+item
                 ### Will use the OpLine as the identifier if it exists. If not - we will use the API ID.  
                 #   Note: the API datapoint ID can change if the tree is re-created.  
                 #   I am hoping that by using the OpLine as the identifier - we will avoid duplicate sensors
@@ -56,7 +55,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 break
         # At this point - the config for the datapoint is in dp_config
         #               - the data is in dp_data
-        if not dp_config == "":
+        if dp_config is not None:
             if dp_config["DPDescr"]["HAType"] == "binarysensor":
                 _LOGGER.debug(f"BINARY SENSOR Adding Entity with config: {dp_config} and data: {dp_data}")
                 entities.append(dp_config)

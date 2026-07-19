@@ -40,6 +40,7 @@
     },
     "error": {
       "auth": "Username/Password is wrong.",
+      "cannot_connect": "Failed to connect to the OZW672. Check the hostname/IP and that the device is reachable.",
       "device_selection_error": "Unexpected Error",
       "timeout": "Timeout connecting to the device."
     },

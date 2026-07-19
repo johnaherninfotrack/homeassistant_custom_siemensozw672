@@ -78,9 +78,14 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
             if valid:
                 # Get the list of devices:
-                self._discovereddevices = (await self._get_menutree(""))["MenuItems"]
-                # Get the device menutTrue ID
-                self.alldevices=await self._get_devices()
+                menutree = await self._get_menutree("")
+                self.alldevices = await self._get_devices()
+                if menutree is None or self.alldevices is None:
+                    # Credentials were accepted but the device stopped responding
+                    # part-way through discovery.
+                    self._errors["base"] = "cannot_connect"
+                    return await self._show_config_form(user_input)
+                self._discovereddevices = menutree["MenuItems"]
                 self._data=user_input
                 if CONF_DEVICE_ID in self._data:
                     existing_entry = self.async_entry_for_existingdevice(self._data[CONF_DEVICE_ID])
@@ -176,7 +181,6 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     dev_title=self._data[CONF_DEVICE_LONGNAME]
                 else:
                     dev_title=self._data[CONF_DEVICE]
-                _LOGGER.debug(f'Adding Entities now...Data: {self._data}')
                 return self.async_create_entry(    
                     title=dev_title, data=self._data, options=self._options
                 )
@@ -196,7 +200,13 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return SiemensOzw672OptionsFlowHandler(config_entry)
+        """Return the options flow handler.
+
+        The handler takes no arguments: Home Assistant supplies the config entry via
+        the inherited OptionsFlow.config_entry property. Passing it to the constructor
+        has been deprecated since HA 2024.11.
+        """
+        return SiemensOzw672OptionsFlowHandler()
 
     def async_entry_for_existingdevice(self, deviceserialnumber):
         """Find an existing entry for a serialnumber."""
@@ -360,35 +370,36 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return False
 
     async def _get_sysinfo(self):
+        """Return the OZW672 system info, or None if it could not be fetched."""
         try:
-            info = await self._client.async_get_sysinfo()
-        except Exception:  # pylint: disable=broad-except
-            pass
-        return info
+            return await self._client.async_get_sysinfo()
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.debug(f'Exception: {repr(err)}')
+            return None
 
     async def _get_devices(self):
+        """Return the discovered device list, or None if it could not be fetched."""
         try:
-            devices = await self._client.async_get_devices()
+            return await self._client.async_get_devices()
         except Exception as err: # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-        return devices
+            return None
 
     async def _get_menutree(self,id):
+        """Return the menu tree for an id, or None if it could not be fetched."""
         try:
-            output = await self._client.async_get_menutree(id)
+            return await self._client.async_get_menutree(id)
         except Exception as err: # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-        return output
+            return None
 
     async def _get_datapoints(self,id):
+        """Return the datapoints for an id, or None if they could not be fetched."""
         try:
-            output = await self._client.async_get_datapoints(id)
+            return await self._client.async_get_datapoints(id)
         except Exception as err: # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-        return output
+            return None
 
     async def _get_data(self, datapoints):
         """Update data via OZW API."""
@@ -396,36 +407,40 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._client.async_get_data(datapoints)
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-            return ''
+            return None
 
     async def _get_data_descr(self,datapoints,all_dpdata):
+        """Return datapoint descriptions, or None if they could not be fetched."""
         try:
             return await self._client.async_get_data_descr(datapoints, all_dpdata)
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.debug(f'Exception: {repr(err)}')
-            pass
-            return ''
+            return None
 
 class SiemensOzw672OptionsFlowHandler(config_entries.OptionsFlow):
     """Config flow options handler for siemens_ozw672."""
 
-    def __init__(self, config_entry):
-        """Initialize HACS options flow."""
-        self.config_entry = config_entry
-        self.options = dict(config_entry.options)
-        _LOGGER.debug(f'OptionsFlow - Existing options: {self.options}')
-        self.conf_httptimeout = self.options.get(CONF_HTTPTIMEOUT)
-        self.conf_httpretries = self.options.get(CONF_HTTPRETRIES)
-        self.conf_scaninterval = self.options.get(CONF_SCANINTERVAL)
-        self.conf_use_device_longname = self.options.get(CONF_USE_DEVICE_LONGNAME) 
-        if self.conf_httptimeout == None: self.conf_httptimeout=DEFAULT_HTTPTIMEOUT
-        if self.conf_httpretries == None: self.conf_httpretries=DEFAULT_HTTPRETRIES
-        if self.conf_scaninterval == None: self.conf_scaninterval=DEFAULT_SCANINTERVAL
-        if self.conf_use_device_longname ==None: self.conf_use_device_longname=DEFAULT_USE_DEVICE_LONGNAME
+    def __init__(self):
+        """Initialize options flow.
+
+        Nothing is read from the config entry here: self.config_entry is not yet
+        available during construction. It is populated in async_step_init instead.
+        """
+        self.options = None
 
     async def async_step_init(self, user_input=None):  # pylint: disable=unused-argument
         """Manage the options."""
+        if self.options is None:
+            self.options = dict(self.config_entry.options)
+            _LOGGER.debug(f'OptionsFlow - Existing options: {self.options}')
+            self.conf_httptimeout = self.options.get(CONF_HTTPTIMEOUT)
+            self.conf_httpretries = self.options.get(CONF_HTTPRETRIES)
+            self.conf_scaninterval = self.options.get(CONF_SCANINTERVAL)
+            self.conf_use_device_longname = self.options.get(CONF_USE_DEVICE_LONGNAME)
+            if self.conf_httptimeout is None: self.conf_httptimeout=DEFAULT_HTTPTIMEOUT
+            if self.conf_httpretries is None: self.conf_httpretries=DEFAULT_HTTPRETRIES
+            if self.conf_scaninterval is None: self.conf_scaninterval=DEFAULT_SCANINTERVAL
+            if self.conf_use_device_longname is None: self.conf_use_device_longname=DEFAULT_USE_DEVICE_LONGNAME
         return await self.async_step_user()
 
     async def async_step_user(self, user_input=None):
