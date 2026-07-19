@@ -10,7 +10,7 @@ plus dark_ variants.
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "brand")
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "custom_components", "siemens_ozw672", "brand")
 os.makedirs(OUT, exist_ok=True)
 
 BOLD = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
@@ -79,7 +79,13 @@ def draw_flame(d, cx, cy, w, h, fill, inner=None):
 
 
 def make_icon(px, dark=False):
-    """Square app icon: SIEMENS over OZW672, with a flame accent."""
+    """Square app icon: the model number alone, with a flame accent.
+
+    The icon deliberately carries only "OZW672" and no manufacturer wordmark.
+    A brand name on a logo tile is the case where implied endorsement is
+    easiest to argue; a model number identifies the hardware without that.
+    The wide logo still carries the full name for use in documentation.
+    """
     S = px * 4  # supersample
     top, bottom = (DARK_BG_A, DARK_BG_B) if dark else (TEAL_A, TEAL_B)
     bg = _vgrad((S, S), top, bottom).convert("RGBA")
@@ -88,15 +94,10 @@ def make_icon(px, dark=False):
     layer = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
 
-    draw_flame(d, S * 0.5, S * 0.235, S * 0.21, S * 0.26, (255, 255, 255, 235), inner=(top[0], top[1], top[2], 255))
+    draw_flame(d, S * 0.5, S * 0.34, S * 0.27, S * 0.34, (255, 255, 255, 235), inner=(top[0], top[1], top[2], 255))
 
-    f_small = _fit(d, "SIEMENS", NARROW, S * 0.62, int(S * 0.16))
-    f_big = _fit(d, "OZW672", BOLD, S * 0.76, int(S * 0.34))
-
-    w1 = d.textlength("SIEMENS", font=f_small)
-    d.text(((S - w1) / 2, S * 0.40), "SIEMENS", font=f_small, fill=(255, 255, 255, 205))
-    w2 = d.textlength("OZW672", font=f_big)
-    d.text(((S - w2) / 2, S * 0.545), "OZW672", font=f_big, fill=WHITE)
+    f_big = _fit(d, "OZW672", BOLD, S * 0.82, int(S * 0.34))
+    d.text((S * 0.5, S * 0.70), "OZW672", font=f_big, fill=WHITE, anchor="mm")
 
     out = Image.alpha_composite(bg, layer).resize((px, px), Image.LANCZOS)
     name = f"{'dark_' if dark else ''}icon{'@2x' if px == 512 else ''}.png"
