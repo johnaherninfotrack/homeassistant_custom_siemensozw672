@@ -32,12 +32,41 @@ import logging
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
-def is_float(string):
-    if "." in string:
-        if string.replace(".", "").isnumeric():
-            return True
-    else:
-        return False
+def parse_numeric(raw):
+    """Parse a numeric reading from the OZW672, or None if it carries no value.
+
+    The device pads values ("       19.8") and reports a run of dashes ("---")
+    when a datapoint has no reading. Returning None makes the entity unknown
+    rather than inventing a number, which would otherwise be recorded as a real
+    measurement in long-term statistics.
+
+    Note this deliberately does not use str.isnumeric(): that returns False for
+    "19.8" (the decimal point disqualifies it) and for "-3", which is how
+    decimals ended up truncated and sub-1.0 values read as zero.
+    """
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text or set(text) == {"-"}:
+        return None
+    try:
+        return float(text)
+    except (TypeError, ValueError):
+        return None
+
+
+def decimal_digits(config_entry):
+    """Display precision from the datapoint description, or None if absent.
+
+    Not every datapoint returns DecimalDigits, so this must not subscript it
+    directly - doing so raised KeyError inside the state machinery and silently
+    froze the affected entities.
+    """
+    raw = (config_entry.get("DPDescr") or {}).get("DecimalDigits")
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Setup sensor platform."""
@@ -105,20 +134,17 @@ class SiemensOzw672Sensor(SiemensOzw672Entity):
 
     @property
     def state(self):
-        """Return the state of the sensor."""
-        item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() :
-            return int(float(data))
-        return data
+        """Return the state of the sensor.
 
-    @property
-    def native_value(self):
-        """Return the state of the sensor."""
+        This is the fallback for datapoint types with no dedicated class, most
+        of which are enumerations reporting text such as "Boost heating", so the
+        value is passed through as-is. A run of dashes is the device's no-data
+        sentinel and becomes None.
+        """
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() :
-            return int(float(data))
+        if not data or set(data) == {"-"}:
+            return None
         return data
 
     @property
@@ -128,8 +154,13 @@ class SiemensOzw672Sensor(SiemensOzw672Entity):
 
     @property
     def device_class(self):
-        """Return de device class of the sensor."""
-        return "siemens_ozw672__custom_device_class"
+        """Return the device class of the sensor.
+
+        None, because the datapoint type is unknown. The previous
+        "siemens_ozw672__custom_device_class" was a legacy custom device class
+        string, which modern Home Assistant rejects.
+        """
+        return None
     
     @property
     def state_class(self):
@@ -152,28 +183,15 @@ class SiemensOzw672TempSensor(SiemensOzw672Entity,SensorEntity):
         
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
+    def native_value(self):
+        """Return the temperature, or None when the device reports no data."""
         item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() :
-            if is_float(data):
-                return float(data)
-            else:
-                return int(float(data))
-        return data
+        return parse_numeric(self.coordinator.data[item]["Data"]["Value"])
 
     @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() :
-            if is_float(data):
-                return float(data)
-            else:
-                return int(float(data))
-        return data
+    def suggested_display_precision(self):
+        """Decimal places to display, taken from the datapoint description."""
+        return decimal_digits(self.config_entry)
 
     @property
     def icon(self):
@@ -214,11 +232,24 @@ class SiemensOzw672PercentSensor(SiemensOzw672Entity,SensorEntity):
         return f'{self.config_entry["entity_prefix"]}{self.config_entry["Name"]}'
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
+    def native_value(self):
+        """Return the percentage, or None when the device reports no data.
+
+        Previously returned a string like "42%", which is not a valid state for
+        a MEASUREMENT sensor - the unit belongs in native_unit_of_measurement.
+        """
         item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        return f'{data}%'
+        return parse_numeric(self.coordinator.data[item]["Data"]["Value"])
+
+    @property
+    def native_unit_of_measurement(self):
+        """Return the native_unit_of_measurement of the sensor."""
+        return PERCENTAGE
+
+    @property
+    def suggested_display_precision(self):
+        """Decimal places to display, taken from the datapoint description."""
+        return decimal_digits(self.config_entry)
 
     @property
     def icon(self):
@@ -227,8 +258,13 @@ class SiemensOzw672PercentSensor(SiemensOzw672Entity,SensorEntity):
 
     @property
     def device_class(self):
-        """Return de device class of the sensor."""
-        return "siemens_ozw672__percent_device_class"
+        """Return the device class of the sensor.
+
+        There is no percentage device class; the unit alone is correct. The
+        previous "siemens_ozw672__percent_device_class" was a legacy custom
+        device class string, which modern Home Assistant rejects.
+        """
+        return None
     
     @property
     def state_class(self):
@@ -245,26 +281,15 @@ class SiemensOzw672EnergySensor(SiemensOzw672Entity,SensorEntity):
         
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
+    def native_value(self):
+        """Return the reading, or None when the device reports no data."""
         item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
-            return float(data)
-        else:
-            return int(float(data))
-        return data
+        return parse_numeric(self.coordinator.data[item]["Data"]["Value"])
 
     @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
-            return float(data)
-        else:
-            return int(float(data))
-        return data
+    def suggested_display_precision(self):
+        """Decimal places to display, taken from the datapoint description."""
+        return decimal_digits(self.config_entry)
 
     @property
     def icon(self):
@@ -297,26 +322,15 @@ class SiemensOzw672PowerSensor(SiemensOzw672Entity,SensorEntity):
         
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
+    def native_value(self):
+        """Return the reading, or None when the device reports no data."""
         item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
-            return float(data)
-        else:
-            return int(float(data))
-        return data
+        return parse_numeric(self.coordinator.data[item]["Data"]["Value"])
 
     @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
-            return float(data)
-        else:
-            return int(float(data))
-        return data
+    def suggested_display_precision(self):
+        """Decimal places to display, taken from the datapoint description."""
+        return decimal_digits(self.config_entry)
 
     @property
     def icon(self):
@@ -347,26 +361,15 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
         return f'{self.config_entry["entity_prefix"]}{self.config_entry["Name"]}'
         
     @property
-    def state(self):
-        """Return the state of the sensor."""
+    def native_value(self):
+        """Return the reading, or None when the device reports no data."""
         item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
-            return float(data)
-        else:
-            return int(float(data))
-        return data
+        return parse_numeric(self.coordinator.data[item]["Data"]["Value"])
 
     @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        item=self.config_entry["Id"]
-        data=self.coordinator.data[item]["Data"]["Value"].strip()
-        if data.isnumeric() and self.config_entry["DPDescr"]["DecimalDigits"] != "0":
-            return float(data)
-        else:
-            return int(float(data))
-        return data
+    def suggested_display_precision(self):
+        """Decimal places to display, taken from the datapoint description."""
+        return decimal_digits(self.config_entry)
 
     @property
     def icon(self):
@@ -375,16 +378,16 @@ class SiemensOzw672NumberSensor(SiemensOzw672Entity,SensorEntity):
 
     @property
     def device_class(self):
-        """Return de device class of the sensor."""
-        return "siemens_ozw672__number_device_class"
+        """Return the device class of the sensor.
+
+        None, because a generic numeric datapoint has no specific class. The
+        previous "siemens_ozw672__number_device_class" was a legacy custom
+        device class string, which modern Home Assistant rejects.
+        """
+        return None
     
     @property
     def state_class(self):
         """Return de device class of the sensor."""
         return SensorStateClass.MEASUREMENT
     
-    #@property
-    #def suggested_display_precision(self):
-    #    """Return the suggested_display_precision of the sensor."""
-    #    _LOGGER.debug(f'SiemensOzw672GenericNumberSensor: suggested_display_precision: {self.config_entry["DPDescr"]["DecimalDigits"]}')
-    #    return int(self.config_entry["DPDescr"]["DecimalDigits"])
