@@ -39,9 +39,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          # Must satisfy the Home Assistant version pinned by
-          # pytest-homeassistant-custom-component in requirements_test.txt.
-          python-version: "3.13"
+          # Must match what requirements_test.txt can actually install:
+          # pytest-homeassistant-custom-component 0.13.346 requires >=3.14.
+          # Keep this in step with the local venv, or CI tests a different
+          # interpreter from the one used during development.
+          python-version: "3.14"
           cache: pip
           # The default cache key looks for requirements.txt or pyproject.toml,
           # neither of which this repo has.
