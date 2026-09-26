@@ -17,7 +17,7 @@
 ## Overview
 
 OZW672 is a Web server platform which enables remote plant monitoring for Siemens LPB/BSB Plants.
-This integration was built and tested using a OZW672.01 running v11.0 firmware monitoring an RVS43.345/109 with 
+This integration was built and tested using an OZW672.01 running v11.0 firmware monitoring an RVS43.345/109 with 
 three AVS73.390/109 extension modules.  
 
 Yes - you can use this integration to WRITE values to the OZW672.  Noting that:
@@ -32,7 +32,7 @@ Sensors Supported
 | --------------- | ------------------------------------------------------------------------- |
 | `binary_sensor` | Read only Show something `On` or `Off`.  eg a Pump                        |
 | `sensor`        | Read only sensors that don't fit in any other category                    |
-| `switch`        | Read/Writ eSwitch something `On` or `Off`.                                |
+| `switch`        | Read/Write Switch something `On` or `Off`.                                |
 | `select`        | Read/Write selectable Enumerations                                        |
 | `number`        | Read/Write Numbers - eg Temperature or Percentage                         |
 
@@ -69,8 +69,8 @@ and it will be addressed promptly.
 
 ## Installation
 
-1. Use [HACS](https://hacs.xyz/docs/setup/download), in `HACS > Integrations Cick the three dots on the top right and select "Custom Repositories" and add a link to this GitHub Repository.
-2. Click "Explore & Download Repositories", Search for "Siemens OZW672" and click "Download.  **Skip to step 8**
+1. Use [HACS](https://hacs.xyz/docs/setup/download), in `HACS > Integrations` click the three dots on the top right and select "Custom Repositories" and add a link to this GitHub Repository.
+2. Click "Explore & Download Repositories", Search for "Siemens OZW672" and click "Download".  **Skip to step 8**
 3. If no HACS, use the tool of choice to open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 4. If you do not have a `custom_components` directory (folder) there, you need to create it.
 5. In the `custom_components` directory (folder) create a new folder called `siemens_ozw672`.
@@ -89,7 +89,7 @@ Note: This integration will wake up your vehicle(s) during installation.
 1. The OZW672 is not very powerful - LIMIT polling only variables you require.  You can discover entities to poll, then re-run and discover more.  Only discover max 10 at a time.
 2. In my testing http was more scaleable than https - YOU MUST ENABLE THIS IN THE OZW672
 3. https implementation does NOT check for valid server certificate
-4. The component provides flexbility in naming your entities in two ways:
+4. The component provides flexibility in naming your entities in two ways:
     <br>a. No Prefix.  eg. "Legionella function"
     <br>b. Prefix the datapoint with the Function/MenuItem name eg.  "DHW - Legionella function"
     <br>c. Prefix the datapoint with the Operating Line number from the manual eg. "1640 Legionella function"
@@ -99,7 +99,7 @@ My recommendations for reliable operation:
 1. Configure the OZW672 to use http. Home > 0.x OZW672.01 > Settings > Communication > Services > We access via http = ON
 2. Configure the OZW672 to use static IP, Gateway & DNS. Home > 0.x OZW672.01 > Settings > Communication > Ethernet
 3. Discover Functions one at a time.  The OZW672 is not powerful - discover one function and max 10 variables at a time.
-4. Configure a dedicated user in teh OZW672 for your home assistant polling.  I used the "Service" user group.  
+4. Configure a dedicated user in the OZW672 for your home assistant polling.  I used the "Service" user group.  
 
 <!---->
 
