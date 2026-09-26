@@ -123,8 +123,8 @@ class SiemensOzw672ApiClient:
                 response = await self.api_wrapper("get", url)
             _LOGGER.debug(f"async_get_data response : {response}")
             if (response["Result"]["Success"] == "true"):
-                if (response["Data"]["Value"] == '----'):
-                    response["Data"]["Value"] = '0'
+                # A '----' value means "no reading". Pass it through untouched so
+                # entities report unknown rather than a fabricated 0.
                 consolidated_response[id]=response
         elapsed_time = time.time() - start_time
         if elapsed_time > 60:

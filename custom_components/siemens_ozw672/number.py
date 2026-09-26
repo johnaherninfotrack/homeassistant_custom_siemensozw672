@@ -12,6 +12,7 @@ from .const import CONF_PREFIX_FUNCTION
 from .const import CONF_PREFIX_OPLINE
 
 from .entity import SiemensOzw672Entity
+from .sensor import parse_numeric
 from homeassistant.helpers.entity import Entity
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -96,7 +97,7 @@ class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
         """Return the state of the sensor."""
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        return float(data)
+        return parse_numeric(data)
 
     async def async_set_native_value(self, value: float) -> None:
         """Update Temp ."""
@@ -121,7 +122,7 @@ class SiemensOzw672TempControl(SiemensOzw672Entity,NumberEntity):
         """Return the state of the sensor."""
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        return float(data)
+        return parse_numeric(data)
 
     @property
     def icon(self):
@@ -179,7 +180,7 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
         """Return the state of the sensor."""
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        return float(data)
+        return parse_numeric(data)
 
     async def async_set_native_value(self, value: float) -> None:
         """Update The Percentage ."""
@@ -204,7 +205,7 @@ class SiemensOzw672PercentControl(SiemensOzw672Entity, NumberEntity):
         """Return the state of the sensor."""
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        return float(data)
+        return parse_numeric(data)
 
     @property
     def icon(self):
@@ -254,7 +255,7 @@ class SiemensOzw672EnergyControl(SiemensOzw672Entity,NumberEntity):
         """Return the state of the sensor."""
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        return float(data)
+        return parse_numeric(data)
 
     async def async_set_native_value(self, value: float) -> None:
         """Update Temp ."""
@@ -279,7 +280,7 @@ class SiemensOzw672EnergyControl(SiemensOzw672Entity,NumberEntity):
         """Return the state of the sensor."""
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        return float(data)
+        return parse_numeric(data)
 
     @property
     def icon(self):
@@ -335,7 +336,7 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
         """Return the state of the sensor."""
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        return float(data)
+        return parse_numeric(data)
 
     async def async_set_native_value(self, value: float) -> None:
         """Update The Percentage ."""
@@ -360,7 +361,7 @@ class SiemensOzw672NumberControl(SiemensOzw672Entity, NumberEntity):
         """Return the state of the sensor."""
         item=self.config_entry["Id"]
         data=self.coordinator.data[item]["Data"]["Value"].strip()
-        return float(data)
+        return parse_numeric(data)
 
     @property
     def icon(self):
