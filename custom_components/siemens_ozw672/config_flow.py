@@ -67,6 +67,25 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.alldevices = None
         self._options = dict(DEFAULT_OPTIONS)
         self._disablenamechoice = False
+        # Set when the flow was started via Reconfigure on an existing entry;
+        # None for a fresh setup.
+        self._reconfigure_entry = None
+
+    async def async_step_reconfigure(self, user_input=None):
+        """Change the datapoints an existing entry is watching.
+
+        This is how datapoints should be added: it walks the same screens as
+        setup but finishes by updating the existing entry in place, so the
+        config entry ID never changes.
+
+        Adding datapoints previously meant re-running "Add Integration", which
+        created a *second* entry with the same unique ID. Because entity unique
+        IDs are derived from the config entry ID, that re-registered every
+        entity under a new identity and orphaned its history - the cause of
+        #33, #35 and #37, and what Home Assistant 2026.3 began warning about.
+        """
+        self._reconfigure_entry = self._get_reconfigure_entry()
+        return await self.async_step_user()
 
     async def async_step_user(self, user_input=None):
         """Handle a flow initialized by the user."""
@@ -126,7 +145,16 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 self._datapoints = existing_entry.data.get(CONF_DATAPOINTS)
                 # Detect if a change to the naming has occurred and updated all.
                 _LOGGER.debug(f'Found existing datapoints: {self._datapoints}')
+
             await self.async_set_unique_id(self._devserialnumber)
+            if self._reconfigure_entry is None:
+                # Setting a unique ID was never paired with this abort, so the
+                # flow happily created a second entry for a device that was
+                # already configured. To add datapoints to an existing device,
+                # use Reconfigure on the entry instead.
+                self._abort_if_unique_id_configured()
+            else:
+                self._abort_if_unique_id_mismatch(reason="wrong_device")
             ### Now get a list of Functions/MenuItems (ignore datapoints at this level) for this device to enable the user to select what to monitor.
             self._devicemenuitems = (await self._get_menutree(menutreeid))["MenuItems"]
             return await self.async_step_mainmenu()
@@ -181,7 +209,19 @@ class SiemensOzw672FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     dev_title=self._data[CONF_DEVICE_LONGNAME]
                 else:
                     dev_title=self._data[CONF_DEVICE]
-                return self.async_create_entry(    
+
+                if self._reconfigure_entry is not None:
+                    # Update the existing entry in place. The entry ID is
+                    # unchanged, so every entity keeps its unique ID and its
+                    # history - which is the whole point of this path.
+                    return self.async_update_reload_and_abort(
+                        self._reconfigure_entry,
+                        title=dev_title,
+                        data=self._data,
+                        options=self._options,
+                    )
+
+                return self.async_create_entry(
                     title=dev_title, data=self._data, options=self._options
                 )
         else:

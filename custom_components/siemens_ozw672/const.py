@@ -3,11 +3,15 @@
 NAME = "Siemens OZW672"
 DOMAIN = "siemens_ozw672"
 DOMAIN_DATA = f"{DOMAIN}_data"
-VERSION = "0.3.9"
+VERSION = "0.4.0"
 CONF_VERSION = 1
 CONF_MINOR_VERSION = 5
 
 ATTRIBUTION = "Integration created by John"
+# The device registry's manufacturer field. NAME above is the integration's own
+# name, which is not the same thing - using it there made every device page
+# report "Siemens OZW672" as the manufacturer of an RVS43.
+MANUFACTURER = "Siemens"
 ISSUE_URL = "https://github.com/johnaherninfotrack/homeassistant_custom_siemensozw672/issues"
 
 # Icons
