@@ -15,6 +15,23 @@ from .const import (
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
+def is_on_value(value, dp_descr=None):
+    """Return True if a polled datapoint value means "on".
+
+    The OZW672 reports RadioButton values as the display text for the device's
+    language, so a non-English device sends e.g. 'Zapnuto' rather than 'On'.
+    The datapoint description carries that text as the button's TextOpt1, so
+    compare against it, falling back to the English 'On'.
+    """
+    text = str(value if value is not None else "").strip()
+    on_labels = {"On"}
+    for button in (dp_descr or {}).get("Buttons") or []:
+        label = str(button.get("TextOpt1") or "").strip()
+        if label:
+            on_labels.add(label)
+    return text in on_labels
+
+
 def build_datapoint_configs(entry, coordinator, hatype):
     """Return the entity configs this platform should create.
 

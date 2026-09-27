@@ -7,7 +7,7 @@ from .const import DEFAULT_NAME
 from .const import DOMAIN
 from .const import CONF_PREFIX_FUNCTION
 from .const import CONF_PREFIX_OPLINE
-from .entity import SiemensOzw672Entity, build_datapoint_configs
+from .entity import SiemensOzw672Entity, build_datapoint_configs, is_on_value
 
 from homeassistant.helpers.entity import Entity
 from homeassistant.core import HomeAssistant
@@ -49,5 +49,8 @@ class SiemensOzw672BinarySensor(SiemensOzw672Entity, BinarySensorEntity):
     def is_on(self):
         """Return true if the binary_sensor is on."""
         item=self.config_entry["Id"]
-        return self.coordinator.data[item]["Data"]["Value"] in ['On']
+        return is_on_value(
+            self.coordinator.data[item]["Data"]["Value"],
+            self.config_entry.get("DPDescr"),
+        )
 

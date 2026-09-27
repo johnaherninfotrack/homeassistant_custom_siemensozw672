@@ -7,7 +7,7 @@ from .const import ICON_SWITCH
 from .const import SWITCH
 from .const import CONF_PREFIX_FUNCTION
 from .const import CONF_PREFIX_OPLINE
-from .entity import SiemensOzw672Entity, build_datapoint_configs
+from .entity import SiemensOzw672Entity, build_datapoint_configs, is_on_value
 
 from homeassistant.helpers.entity import Entity
 from homeassistant.core import HomeAssistant
@@ -49,7 +49,10 @@ class SiemensOzw672BinarySwitch(SiemensOzw672Entity, SwitchEntity):
     def is_on(self):
         """Return true if the switch is on."""
         item=self.config_entry["Id"]
-        return self.coordinator.data[item]["Data"]["Value"] in ['On']
+        return is_on_value(
+            self.coordinator.data[item]["Data"]["Value"],
+            self.config_entry.get("DPDescr"),
+        )
 
     async def async_turn_on(self, **kwargs):  # pylint: disable=unused-argument
         """Turn on the switch."""
