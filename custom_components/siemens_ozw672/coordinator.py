@@ -39,12 +39,17 @@ class SiemensOzw672DataUpdateCoordinator(DataUpdateCoordinator):
         client: SiemensOzw672ApiClient,
         datapoints,
         scaninterval: timedelta,
+        config_entry: ConfigEntry | None = None,
     ) -> None:
         """Initialize."""
         self.api = client
         self.platforms = []
         self.datapoints = datapoints
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=scaninterval)
+        self.mobile_triggers = []
+        super().__init__(
+            hass, _LOGGER, name=DOMAIN, update_interval=scaninterval,
+            config_entry=config_entry,
+        )
 
     async def _async_update_data(self):
         """Update all data via the OZW672 Web API."""
