@@ -15,6 +15,7 @@ from homeassistant.helpers import device_registry
 from homeassistant.helpers import entity_registry
 
 from .api import SiemensOzw672ApiClient
+from .mobile import async_discover_mobile_triggers
 from .coordinator import (
     SiemensOzw672ConfigEntry,
     SiemensOzw672DataUpdateCoordinator,
@@ -115,13 +116,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: SiemensOzw672ConfigEntry
 
     session = async_get_clientsession(hass)
     client = SiemensOzw672ApiClient(host, protocol, username, password, session, timeout=conf_httptimeout, retries=conf_httpretries)
-    coordinator = SiemensOzw672DataUpdateCoordinator(hass, client=client, datapoints=datapoints, scaninterval=(timedelta(seconds = conf_scaninterval)))
+    coordinator = SiemensOzw672DataUpdateCoordinator(hass, client=client, datapoints=datapoints, scaninterval=(timedelta(seconds = conf_scaninterval)), config_entry=entry)
 
     # Raises ConfigEntryNotReady (retry later) or ConfigEntryAuthFailed (prompt
     # for credentials) as appropriate, instead of the old refresh-then-check,
     # which reported every failure as "not ready" and retried bad passwords
     # forever.
     await coordinator.async_config_entry_first_refresh()
+
+    # Existing entries already store gateway:controller serials. Discovery on
+    # setup also covers reconfigure reloads without migrating saved datapoints.
+    # Legacy name-based identities are not valid serials and are skipped.
+    device_identity = entry.data.get(CONF_DEVICE_ID, "")
+    _, separator, serial_number = device_identity.partition(":")
+    if separator and serial_number and all(c in "0123456789abcdefABCDEF" for c in serial_number):
+        coordinator.mobile_triggers = await async_discover_mobile_triggers(
+            client, serial_number
+        )
 
     # The coordinator lives on the entry rather than in hass.data[DOMAIN], so it
     # is cleaned up with the entry and platforms get a typed handle on it.

@@ -36,7 +36,8 @@ SENSOR = "sensor"
 SWITCH = "switch"
 SELECT = "select"
 NUMBER = "number"
-PLATFORMS = [SWITCH, SELECT, NUMBER, BINARY_SENSOR, SENSOR]
+BUTTON = "button"
+PLATFORMS = [SWITCH, SELECT, NUMBER, BINARY_SENSOR, SENSOR, BUTTON]
 
 
 # Configuration and options

@@ -22,11 +22,32 @@ three AVS73.390/109 extension modules.
 
 Yes - you can use this integration to WRITE values to the OZW672.  Noting that:
 1. The OZW672 only supports certain datapoints to have WriteAccess
-2. This integration only supports writing for "Enumerations", "Numbers" and "Switch" domains.
+2. This integration supports writing for "Enumerations", "Numbers", "Switch" and Mobile trigger buttons.
 3. Some values you write are ignored by the OZW672.  If that happens - test using the OZW672 UI.
 
 
 Sensors Supported
+
+Siemens Mobile-tree trigger widgets (Area `2`, Type `1`) are automatically
+discovered for the selected device when the integration loads or reloads and
+exposed as Home Assistant buttons. For example, `Push TV` on an RVS61.843F/109
+starts a momentary DHW charging action. Each press writes the widget's
+`PressedValue` to its discovered datapoint exactly once; it does not change
+setpoints or schedules, toggle DHW mode, or restore a previous value.
+
+Buttons share the existing device and use a stable `WidgetId` for identity;
+runtime datapoint IDs are rediscovered, never hardcoded. Without `WidgetId`, a
+complete text catalog reference (`CatId`, `GroupId`, `Id`) is used; widgets
+without either stable identity are skipped. Enumeration, RadioButton and
+Numeric trigger datapoints are supported. Missing Mobile trees or malformed
+widgets do not prevent the existing platforms from loading. Legacy entries
+whose device identity contains a name instead of a controller serial are
+skipped. No new config entry or datapoint-selection step is needed.
+
+A failed or timed-out press reports an error and is not automatically retried,
+since the gateway may already have executed the action. An expired session is
+renewed by normal polling/discovery, not by replaying a trigger write. Buttons
+have no ON/OFF state; Home Assistant records the last successful press time.
 
 | Platform        | Description                                                               |
 | --------------- | ------------------------------------------------------------------------- |

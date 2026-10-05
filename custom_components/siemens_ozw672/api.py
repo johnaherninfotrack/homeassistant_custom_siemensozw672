@@ -15,6 +15,15 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 HEADERS = {"Content-type": "application/json; charset=UTF-8"}
 
 
+def _api_succeeded(response):
+    """Validate the result envelope without assuming a well-formed response."""
+    return (
+        isinstance(response, dict)
+        and isinstance(response.get("Result"), dict)
+        and response["Result"].get("Success") == "true"
+    )
+
+
 class SiemensOzw672ApiError(Exception):
     """Base error raised by the OZW672 API client.
 
@@ -125,7 +134,7 @@ class SiemensOzw672ApiClient:
     async def async_get_datapoints(self,id) -> dict:
         """Get the DataPoint(s) from the OZW672. """
         url=self._protocol + "://" + self._host + "/api/menutree/list.json?SessionId=" + self._sessionid +"&Id=" + id       
-        _LOGGER.debug(f"async_get_datapoints: url={url} id={id}")
+        _LOGGER.debug("async_get_datapoints: id=%s", id)
         if (self._host == "test"):
             response=json.loads(TESTDATA["DATAPOINTLIST"][id])
         else:
@@ -162,6 +171,51 @@ class SiemensOzw672ApiClient:
         _LOGGER.debug(f"OZW672 Data Poll time: {round(elapsed_time)} seconds")
         return consolidated_response
         # Sample response {"Data": {"Type": "Enumeration", "Value": "On", "Unit": ""}, "Result": {"Success": "true"}}
+
+    def _menutree_url(self, endpoint, **params):
+        """Build an encoded request using the current authenticated session."""
+        query = Parse.urlencode({"SessionId": self._sessionid, **params})
+        return f"{self._protocol}://{self._host}/api/menutree/{endpoint}.json?{query}"
+
+    async def async_get_mobile_root(self, serial_number):
+        """Return the runtime root ID of the selected device's Mobile tree."""
+        if self._host == "test":
+            return None
+        response = await self.api_wrapper("get", self._menutree_url(
+            "device_root", SerialNumber=serial_number, TreeName="Mobile"
+        ))
+        if not _api_succeeded(response):
+            return None
+        tree_item = response.get("TreeItem")
+        root_id = tree_item.get("Id") if isinstance(tree_item, dict) else None
+        if isinstance(root_id, (str, int)) and not isinstance(root_id, bool):
+            return str(root_id) if str(root_id).strip() else None
+        return None
+
+    async def async_get_datapoint_description(self, datapoint_id):
+        """Read a description directly, independently of normal DP configs."""
+        response = await self.api_wrapper("get", self._menutree_url(
+            "datapoint_desc", Id=datapoint_id
+        ))
+        if not _api_succeeded(response):
+            raise SiemensOzw672ApiError("Datapoint description unavailable")
+        description = response.get("Description")
+        if not isinstance(description, dict):
+            raise SiemensOzw672ApiError("Malformed datapoint description")
+        return description
+
+    async def async_write_datapoint(self, datapoint_id, datapoint_type, value):
+        """Write a momentary trigger once, without retrying an uncertain write."""
+        params = {"Id": datapoint_id, "Type": datapoint_type, "Value": value}
+        if datapoint_type == "Numeric":
+            params["IsValid"] = "true"
+        response = await self.api_wrapper(
+            "get", self._menutree_url("write_datapoint", **params),
+            _allow_retries=False,
+        )
+        if not _api_succeeded(response):
+            raise SiemensOzw672ApiError("Datapoint write rejected by OZW672")
+        return response
 
     async def async_write_data(self, datapoint, value) -> dict:
         """Write the Data for a single datapoints to the OZW6722."""
@@ -264,7 +318,7 @@ class SiemensOzw672ApiClient:
 
     async def api_wrapper(
         self, method: str, url: str, data: dict = None, headers: dict = None,
-        _reauth_attempted: bool = False
+        _reauth_attempted: bool = False, _allow_retries: bool = True
     ) -> dict:
         """Get information from the OZW WebAPI."""
         if data is None:
@@ -273,22 +327,27 @@ class SiemensOzw672ApiClient:
             headers = {}
         last_error = None
 
-        for x in range(max(self._retries, 1)):  #### YES - WE NEED TO RETRY OCCASSIONALY
+        attempts = max(self._retries, 1) if _allow_retries else 1
+        # Log only the path: URLs and exception messages can contain credentials
+        # or session tokens, including during authentication and timeout errors.
+        logurl = Parse.urlsplit(url).path
+        for x in range(attempts):
             try:
                 async with asyncio.timeout(self._timeout):
                     if method == "get_preauth":
                         response = await self._session.get(url, headers=headers,ssl=False)
                         jsonresponse = await response.json()
-                        _LOGGER.debug(f"PREAuth: {jsonresponse}")
+                        _LOGGER.debug("OZW authentication response received")
                         return jsonresponse
                     elif method == "get":
                         cache_sessionid = self._sessionid
-                        logurl=url.replace(f"SessionId={cache_sessionid}", "SessionId=XXXXXX")
                         _LOGGER.debug(f"HTTP GET url: {logurl}")
                         response = await self._session.get(url, headers=headers,ssl=False)
                         jsonresponse = await response.json()
-                        _LOGGER.debug(f"API GET: {jsonresponse}")
+                        _LOGGER.debug("OZW API response received: %s", logurl)
                         if (jsonresponse["Result"]["Success"] == "false"):
+                            if not _allow_retries:
+                                return jsonresponse
                             if (jsonresponse["Result"]["Error"]["Nr"] in ['1','2']):
                                 if _reauth_attempted:
                                     # Re-authenticating did not help. Returning rather than
@@ -304,7 +363,7 @@ class SiemensOzw672ApiClient:
                                 newurl = url.replace(f"SessionId={cache_sessionid}", f"SessionId={self._sessionid}")
                                 return await self.api_wrapper("get", newurl, _reauth_attempted=True)
                             else :
-                                _LOGGER.error(f'Failed API call with error: {jsonresponse["Result"]["Error"]["Txt"]} for url:{logurl}')
+                                _LOGGER.error("Failed API call: %s", logurl)
                                 return jsonresponse
                         else:
                             return jsonresponse
@@ -317,26 +376,26 @@ class SiemensOzw672ApiClient:
             except TimeoutError as exception:
                 last_error = exception
                 _LOGGER.debug(
-                    "Timeout fetching information from %s (attempt %s/%s): %s",
-                    url, x + 1, self._retries, exception,
+                    "Timeout fetching information from %s (attempt %s/%s)",
+                    logurl, x + 1, attempts,
                 )
 
-            except (KeyError, TypeError) as exception:
+            except (KeyError, TypeError, ValueError) as exception:
                 last_error = exception
                 _LOGGER.debug(
-                    "Error parsing information from %s (attempt %s/%s): %s",
-                    url, x + 1, self._retries, exception,
+                    "Error parsing information from %s (attempt %s/%s)",
+                    logurl, x + 1, attempts,
                 )
             except (aiohttp.ClientError, socket.gaierror) as exception:
                 last_error = exception
                 _LOGGER.debug(
-                    "Error fetching information from %s (attempt %s/%s): %s",
-                    url, x + 1, self._retries, exception,
+                    "Error fetching information from %s (attempt %s/%s)",
+                    logurl, x + 1, attempts,
                 )
 
         # Every attempt failed. Previously this fell off the end and implicitly
         # returned None, which callers then subscripted - turning a network
         # problem into a confusing TypeError somewhere unrelated.
         raise SiemensOzw672ConnectionError(
-            f"No response from {self._host} after {self._retries} attempt(s)"
+            f"No response from {self._host} after {attempts} attempt(s)"
         ) from last_error
